@@ -1,35 +1,35 @@
 <div class="add-transaction-container">
-  <div class="add-transaction-header">
-    <a routerLink="/" class="back-button"><i class="fas fa-arrow-left"></i></a>
-    <h1>Agregar Transacción</h1>
-  </div>
+  <div class="add-transaction-header">
+    <a routerLink="/" class="back-button"><i class="fas fa-arrow-left"></i></a>
+    <h1>Agregar Transacción</h1>
+  </div>
 
-  <form #transactionForm="ngForm" (ngSubmit)="addTransaction()">
-    <div class="input-group">
-      <label for="amount">Monto</label>
-      <input type="number" id="amount" name="amount" [(ngModel)]="amount" required>
-    </div>
+  <form #transactionForm="ngForm" (ngSubmit)="addTransaction()">
+    <div class="input-group">
+      <label for="amount">Monto</label>
+      <input type="number" id="amount" name="amount" [(ngModel)]="amount" required>
+    </div>
 
-    <div class="input-group">
-      <label for="description">Descripción</label>
-      <input type="text" id="description" name="description" [(ngModel)]="description" required>
-    </div>
+    <div class="input-group">
+      <label for="description">Descripción</label>
+      <input type="text" id="description" name="description" [(ngModel)]="description" required>
+    </div>
 
-    <div class="input-group">
-      <label for="category">Categoría</label>
-      <select id="category" name="category" [(ngModel)]="category" required>
-        <option value="" disabled selected>Selecciona una categoría</option>
-        <option *ngFor="let cat of categories()" [value]="cat.name">{{ cat.name }}</option>
-      </select>
-    </div>
+    <div class="input-group">
+      <label for="category">Categoría</label>
+      <select id="category" name="category" [(ngModel)]="category" required>
+        <option value="" disabled selected>Selecciona una categoría</option>
+        <option *ngFor="let cat of categories()" [value]="cat.name">{{ cat.name }}</option>
+      </select>
+    </div>
 
-    <div class="type-buttons">
-      <button type="button" [class.active]="isExpense" (click)="toggleType(true)">Gasto</button>
-      <button type="button" [class.active]="!isExpense" (click)="toggleType(false)">Ingreso</button>
-    </div>
+    <div class="type-buttons">
+      <button type="button" [class.active]="isExpense" (click)="toggleType(true)">Gasto</button>
+      <button type="button" [class.active]="!isExpense" (click)="toggleType(false)">Ingreso</button>
+    </div>
 
-    <button type="submit" [disabled]="!transactionForm.valid" class="submit-button">
-      Agregar
-    </button>
-  </form>
+    <button type="submit" [disabled]="!transactionForm.valid" class="submit-button">
+      Agregar
+    </button>
+  </form>
 </div>

@@ -3,11 +3,12 @@
 // Contenedor principal de la página
 .add-transaction-container {
   // Asegura que ocupe toda la altura de la pantalla
-  min-height: 100vh;
+  min-height: 60vh;
   // Color de fondo de la página
   background-color: #f5f5f5;
   // Padding en la parte inferior para que no se superponga con el navbar
   padding-bottom: 80px;
+  
 }
 
 // Estilos del encabezado verde en la parte superior
@@ -26,6 +27,8 @@
   // Bordes redondeados en la parte inferior
   border-bottom-left-radius: 20px; /* AQUI ESTA EL CAMBIO */
   border-bottom-right-radius: 20px; /* AQUI ESTA EL CAMBIO */
+ 
+
   
   h1 {
     // Estilo del título principal
