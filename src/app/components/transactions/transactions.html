@@ -1,0 +1,44 @@
+<div class="transactions-container">
+  <div class="tabs">
+    <button>Diario</button>
+    <button>Semanal</button>
+    <button class="active">Mensual</button>
+  </div>
+  <div class="transaction-list">
+    <ng-container *ngFor="let transaction of transactions()">
+      <div class="transaction-item" *ngIf="!editingTransaction || editingTransaction.id !== transaction.id">
+        <div class="left">
+          <div class="icon" [style.background-color]="transaction.iconColor">
+            <i [class]="transaction.icon"></i>
+          </div>
+          <div class="details">
+            <p class="description">{{ transaction.description }}</p>
+            <p class="date">{{ transaction.date }}</p>
+          </div>
+        </div>
+        <div class="right">
+          <span class="amount" [class]="getAmountClass(transaction.amount)">
+            {{ transaction.amount | number:'1.2-2' }}
+          </span>
+          <p class="category">{{ transaction.category }}</p>
+          <div class="actions">
+            <button class="edit-btn" (click)="editTransaction(transaction)">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="delete-btn" (click)="deleteTransaction(transaction.id)">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="transaction-form" *ngIf="editingTransaction && editingTransaction.id === transaction.id">
+        <input type="text" [(ngModel)]="editedTransaction.description" placeholder="Descripción">
+        <input type="number" [(ngModel)]="editedTransaction.amount" placeholder="Monto">
+        <div class="actions">
+          <button (click)="saveChanges()">Guardar</button>
+          <button (click)="cancelEdit()">Cancelar</button>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+</div>

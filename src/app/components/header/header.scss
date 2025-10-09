@@ -1,0 +1,58 @@
+/* src/app/components/header/header.component.scss */
+
+.header {
+  background-color: #33a34a; // Verde principal
+  color: white;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  position: relative;
+  z-index: 10;
+
+  .greeting {
+    h1 {
+      font-size: 24px;
+      margin: 0;
+      font-weight: 500;
+    }
+
+    p {
+      font-size: 14px;
+      margin: 0;
+      opacity: 0.8;
+    }
+  }
+
+.notification-icon-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+
+    .notification-icon {
+      font-size: 24px;
+      color: white; // Color por defecto
+
+      &.has-notifications {
+        color: #fdd835; // Amarillo
+      }
+    }
+
+    .notification-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background-color: #f44336; // Rojo
+      color: white;
+      border-radius: 50%;
+      padding: 2px 6px;
+      font-size: 10px;
+      font-weight: bold;
+    }
+  }
+}

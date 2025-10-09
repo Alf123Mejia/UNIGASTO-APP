@@ -1,1 +1,30 @@
-/* You can add global styles to this file, and also import other style files */
+/* src/styles.scss */
+
+// Variables de colores
+$color-primary: #33a34a; // Verde principal
+$color-secondary: #f0f0f0; // Gris claro
+$color-dark: #333333; // Texto oscuro
+$color-white: #ffffff; // Blanco
+$color-yellow: #fdd835; // Amarillo de los íconos
+$color-positive: #4caf50; // Verde para saldos positivos
+$color-negative: #f44336; // Rojo para gastos negativos
+
+// Estilos base
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  margin: 0; /* Quita el margen por defecto del body */
+  padding: 0; /* Quita el padding por defecto del body */
+  background-color: $color-secondary;
+  color: $color-dark;
+}
+
+// Contenedor principal de la aplicación
+.app-container {
+  max-width: 450px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: $color-white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}

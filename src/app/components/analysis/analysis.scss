@@ -1,0 +1,106 @@
+/* src/app/components/analysis/analysis.component.scss */
+
+// Definición de variables clave para consistencia
+$color-primary: #33a34a; // Verde principal
+$color-background: #f5f5f5; // Fondo claro
+$color-white: #ffffff; // Blanco
+$color-text: #333333; // Texto oscuro
+
+.analysis-container {
+  min-height: 100vh;
+  background-color: $color-background;
+  padding-bottom: 80px;
+}
+
+// ------------------------------------
+// HEADER (Estilo consistente con el resto de la app)
+// ------------------------------------
+.analysis-header {
+  background-color: $color-primary;
+  color: $color-white;
+  padding: 20px; /* Aumentado a 20px para mejor espaciado */
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  
+  h1 {
+    font-size: 24px;
+    margin: 0;
+    font-weight: 600; // Un poco más audaz
+  }
+  .back-button {
+    font-size: 24px;
+    color: $color-white;
+  }
+}
+
+// ------------------------------------
+// TIME TABS (Mejora de UX y visualización)
+// ------------------------------------
+.time-tabs {
+  display: flex;
+  justify-content: space-between; // Ajustado para un mejor espaciado
+  background-color: #e0e0e0;
+  border-radius: 12px; // Más redondeado
+  padding: 4px;
+  margin: 10px 20px; // Aumentado el margen horizontal
+  
+  button {
+    flex-grow: 1;
+    padding: 8px 0; // Padding ajustado
+    border: none;
+    background-color: transparent;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    color: #666;
+    transition: background-color 0.2s, color 0.2s;
+    
+    &.active {
+      background-color: $color-primary;
+      color: $color-white;
+      font-weight: 700;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+  }
+}
+
+// ------------------------------------
+// CHARTS SECTION (Contenedores y espaciado)
+// ------------------------------------
+.charts-section {
+  padding: 0 20px; /* Aumentado a 20px para mejor espaciado */
+
+  h2 {
+    font-size: 18px;
+    margin-top: 15px; // Reducido el margen superior
+    margin-bottom: 10px;
+    font-weight: 600;
+    color: $color-text;
+  }
+
+  .chart-container {
+    width: 90%;
+    max-width: 100%;
+    height: auto; // Altura se ajustará automáticamente
+    background-color: $color-white;
+    border-radius: 15px;
+    padding: 20px; // Padding aumentado
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+
+    canvas {
+      width: 100% !important;
+      height: 300px !important; // Altura fija para el canvas
+      max-width: 100%;
+      max-height: 100%;
+    }
+  }
+}

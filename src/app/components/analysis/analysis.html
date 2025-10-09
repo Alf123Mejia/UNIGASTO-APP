@@ -1,0 +1,20 @@
+<div class="analysis-container">
+    <div class="analysis-header">
+        <a routerLink="/" class="back-button"><i class="fas fa-arrow-left"></i></a>
+        <h1>Análisis</h1>
+    </div>
+
+    <div class="time-tabs">
+        <button class="active">Semanal</button>
+        <button>Mensual</button>
+        <button>Anual</button>
+    </div>
+
+    <div class="charts-section">
+        <h2>Gasto por categoría</h2>
+        <div class="chart-container">
+            <canvas baseChart [data]="pieChartData()" [options]="pieChartOptions" [type]="'pie'">
+            </canvas>
+        </div>
+    </div>
+</div>

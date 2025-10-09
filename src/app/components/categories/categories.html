@@ -1,0 +1,23 @@
+<div class="categories-container">
+  <div class="categories-header">
+    <a routerLink="/" class="back-button"><i class="fas fa-arrow-left"></i></a>
+    <h1>Categorías</h1>
+  </div>
+
+  <div class="form-section">
+    <form (ngSubmit)="addCategory()">
+      <div class="input-group">
+        <label for="newCategory">Añadir nueva categoría</label>
+        <input type="text" id="newCategory" name="newCategory" [(ngModel)]="newCategoryName" required>
+      </div>
+      <button type="submit" [disabled]="!newCategoryName.trim()">Añadir</button>
+    </form>
+  </div>
+
+  <div class="category-list">
+    <div class="category-item" *ngFor="let category of categories()">
+      <div class="icon-container" [style.background-color]="category.color"><i [class]="category.icon"></i></div>
+      <p class="category-name">{{ category.name }}</p>
+    </div>
+  </div>
+</div>

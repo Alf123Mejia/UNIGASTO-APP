@@ -1,0 +1,152 @@
+/* src/app/components/transactions/transactions.component.scss */
+
+.transactions-container {
+  padding: 0 20px 20px;
+  
+  .tabs {
+    display: flex;
+    justify-content: center;
+    background-color: #f0f0f0;
+    border-radius: 20px;
+    padding: 5px;
+    margin-bottom: 20px;
+    
+    button {
+      flex-grow: 1;
+      padding: 10px 0;
+      border: none;
+      background-color: transparent;
+      border-radius: 15px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      
+      &.active {
+        background-color: #33a34a; // Verde principal
+        color: white;
+      }
+    }
+  }
+  
+  .transaction-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    
+    .transaction-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      
+      .left {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        
+        .icon {
+          background-color: #fdd835; // Amarillo
+          border-radius: 50%;
+          width: 40px;
+          height: 40px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          
+          i {
+            font-size: 20px;
+            color: #333;
+          }
+        }
+        
+        .details {
+          .description {
+            font-weight: 500;
+          }
+          .date {
+            font-size: 12px;
+            color: #888;
+          }
+        }
+      }
+      
+      .right {
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        
+        .amount {
+          font-weight: 600;
+          font-size: 18px;
+          
+          &.positive {
+            color: #4caf50; // Verde positivo
+          }
+          &.negative {
+            color: #f44336; // Rojo negativo
+          }
+        }
+        .category {
+          font-size: 12px;
+          color: #888;
+        }
+        
+        .actions {
+          margin-top: 5px;
+          
+          button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #888;
+            font-size: 14px;
+            margin-left: 10px;
+            
+            &.edit-btn {
+              color: #2196F3;
+            }
+            &.delete-btn {
+              color: #f44336;
+            }
+          }
+        }
+      }
+    }
+    
+    .transaction-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border-radius: 10px;
+      
+      input {
+        padding: 8px;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+      }
+      
+      .actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        
+        button {
+          padding: 8px 12px;
+          border: none;
+          border-radius: 5px;
+          color: white;
+          cursor: pointer;
+          
+          &:first-child {
+            background-color: #4caf50;
+          }
+          &:last-child {
+            background-color: #f44336;
+          }
+        }
+      }
+    }
+  }
+}

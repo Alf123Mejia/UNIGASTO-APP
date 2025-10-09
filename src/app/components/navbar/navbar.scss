@@ -1,0 +1,58 @@
+/* src/app/components/navbar/navbar.component.scss */
+
+.navbar {
+  background-color: white;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-around;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+
+  /* Estas tres líneas son la clave */
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  max-width: 410px; /* Asegura que no sea más ancho que el contenedor de la app */
+  z-index: 100;
+  
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: #888;
+    font-size: 12px;
+    
+    .icon {
+      font-size: 24px;
+      margin-bottom: 5px;
+      
+      &.active {
+        color: #33a34a; // Verde principal
+      }
+    }
+    
+    &.active {
+      color: #33a34a; // Verde principal
+    }
+
+    &.add-button {
+      background-color: #fdd835; /* Un color amarillo llamativo */
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      top: -16px; /* Lo mueve un poco hacia arriba */
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+
+      i {
+        color: #333;
+        font-size: 20px;
+      }
+    }
+  }
+}

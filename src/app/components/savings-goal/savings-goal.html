@@ -1,0 +1,13 @@
+<div class="savings-card">
+  <div class="icon">
+    <i class="fas fa-car"></i>
+  </div>
+  <div class="details">
+    <p class="label">Total Ahorrado:</p>
+    <span class="amount">${{ totalSaved() | number:'1.2-2' }}</span>
+    <p class="meta">Meta: ${{ savingsGoal() | number:'1.2-2' }}</p>
+    <div class="progress-bar">
+      <div class="progress" [style.width]="progressWidth() + '%'"></div>
+    </div>
+  </div>
+</div>

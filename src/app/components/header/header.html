@@ -1,0 +1,12 @@
+<div class="header">
+  <div class="greeting">
+    <h1>Hola, Williams Garcia</h1>
+    <p>Bienvenido A UniGasto</p>
+  </div>
+  <a routerLink="/notifications" class="notification-icon-container">
+    <i class="fas fa-bell notification-icon" [ngClass]="{'has-notifications': unreadNotifications() > 0}"></i>
+    <span class="notification-badge" *ngIf="unreadNotifications() > 0">
+      {{ unreadNotifications() }}
+    </span>
+  </a>
+</div>

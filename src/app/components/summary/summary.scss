@@ -1,0 +1,84 @@
+/* src/app/components/summary/summary.component.scss */
+
+.summary-card {
+  background-color: #4CAF50; // Verde para el balance
+  color: white;
+  margin: 20px 20px 0 20px;
+  padding: 20px;
+  border-radius: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 20;
+
+  .balances {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .balance-item {
+    text-align: left;
+
+    .label {
+      font-size: 14px;
+      opacity: 0.8;
+      display: flex;
+      align-items: center;
+
+      i {
+        margin-right: 5px;
+      }
+    }
+
+    .amount {
+      font-size: 28px;
+      font-weight: 600;
+    }
+  }
+
+  .progress-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 0;
+    /* Ajusta el padding para dar espacio al texto */
+
+
+    .progress-bar {
+    width: 100%; /* Asegura que la barra de progreso ocupe todo el ancho */
+    margin-bottom: 5px;
+    height: 8px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+
+
+      .progress {
+        height: 100%;
+        background-color: white;
+        border-radius: 4px;
+        transition: width 0.5s ease-in-out;
+
+        &.white {
+          background-color: #ffffff; // Blanco  
+        }
+
+        &.yellow {
+          background-color: #fdd835; // Amarillo
+        }
+
+        &.orange {
+          background-color: #ff5500; // naranja
+        }
+      }
+    }
+
+    p {
+      font-size: 15px;
+      font-weight: bolder;
+      margin-top: 5px;
+      text-align: center;
+      opacity: 0.8;
+    }
+  }
+}
