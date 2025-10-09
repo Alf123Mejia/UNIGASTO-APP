@@ -1,54 +1,94 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule } from '@angular/forms'; // <-- ¡ESTA LÍNEA ES LA CLAVE!
 import { FinancialService, Transaction } from '../../services/financial';
+
+type TimeFilter = 'Diario' | 'Semanal' | 'Mensual';
 
 @Component({
   selector: 'app-transactions',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule, 
+    FormsModule // <-- ¡Y ASEGÚRATE DE QUE ESTÉ AQUÍ!
+  ],
   templateUrl: './transactions.html',
   styleUrl: './transactions.scss'
 })
 export class Transactions {
   private financialService = inject(FinancialService);
-  transactions = this.financialService.transactions;
+  
+  activeFilter = signal<TimeFilter>('Mensual');
+  displayedMonth = signal(new Date());
 
-  // NUEVO: Propiedad para gestionar la transacción que se está editando
+  isNextMonthDisabled = computed(() => {
+    const now = new Date();
+    const displayed = this.displayedMonth();
+    return displayed.getMonth() === now.getMonth() && displayed.getFullYear() === now.getFullYear();
+  });
+
+  private allTransactions = this.financialService.transactions;
+
+  filteredTransactions = computed(() => {
+    const filter = this.activeFilter();
+    const transactions = this.allTransactions();
+
+    switch (filter) {
+      case 'Diario':
+        const today = new Date().setHours(0, 0, 0, 0);
+        return transactions.filter(t => new Date(t.date).setHours(0, 0, 0, 0) === today);
+      case 'Semanal':
+        const nowForWeek = new Date();
+        const oneWeekAgo = new Date(nowForWeek.setDate(nowForWeek.getDate() - 7));
+        return transactions.filter(t => new Date(t.date) >= oneWeekAgo);
+      case 'Mensual':
+        const displayed = this.displayedMonth();
+        return transactions.filter(t => 
+          new Date(t.date).getMonth() === displayed.getMonth() &&
+          new Date(t.date).getFullYear() === displayed.getFullYear()
+        );
+      default:
+        return transactions;
+    }
+  });
+
   editingTransaction: Transaction | null = null;
   editedTransaction: Partial<Transaction> = {};
 
-  // Método para determinar la clase del monto (positivo o negativo)
+  setFilter(filter: TimeFilter): void {
+    this.activeFilter.set(filter);
+  }
+
+  goToPreviousMonth(): void {
+    this.displayedMonth.update(currentDate => new Date(currentDate.setMonth(currentDate.getMonth() - 1)));
+  }
+
+  goToNextMonth(): void {
+    this.displayedMonth.update(currentDate => new Date(currentDate.setMonth(currentDate.getMonth() + 1)));
+  }
+
   getAmountClass(amount: number): string {
     return amount >= 0 ? 'positive' : 'negative';
   }
 
-  // NUEVO: Método para eliminar una transacción
   deleteTransaction(id: number): void {
     this.financialService.deleteTransaction(id);
   }
   
-  // NUEVO: Método para iniciar la edición de una transacción
   editTransaction(transaction: Transaction): void {
     this.editingTransaction = transaction;
-    // Copiamos los valores para no modificar el original directamente
     this.editedTransaction = { ...transaction };
   }
 
-  // NUEVO: Método para guardar los cambios
   saveChanges(): void {
     if (this.editingTransaction && this.editedTransaction) {
-      const updatedTransaction = {
-        ...this.editingTransaction,
-        ...this.editedTransaction
-      };
+      const updatedTransaction = { ...this.editingTransaction, ...this.editedTransaction } as Transaction;
       this.financialService.updateTransaction(updatedTransaction);
-      this.editingTransaction = null; // Cierra el formulario de edición
-      this.editedTransaction = {}; // Limpia el objeto
+      this.editingTransaction = null; 
+      this.editedTransaction = {}; 
     }
   }
 
-  // NUEVO: Método para cancelar la edición
   cancelEdit(): void {
     this.editingTransaction = null;
     this.editedTransaction = {};

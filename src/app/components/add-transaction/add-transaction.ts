@@ -40,7 +40,7 @@ export class AddTransaction { // Corregido: 'AddTransaction' a 'AddTransactionCo
         // Corregido: Se añade el id
         id: Date.now(),
         description: this.description,
-        date: new Date().toLocaleString(),
+        date: new Date().toISOString(), // Usamos un formato estándar universal
         amount: finalAmount,
         category: this.category,
         // Corregido: Se añade el iconColor

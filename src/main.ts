@@ -1,16 +1,9 @@
+// src/main.ts
+
 import { bootstrapApplication } from '@angular/platform-browser';
-import { provideRouter } from '@angular/router';
-import { App } from './app/app'; // Asegúrate de que el nombre del componente principal sea correcto
-import { routes } from './app/app.routes';
+import { appConfig } from './app/app.config'; // NUEVO: Importamos la configuración central
+import { App } from './app/app';
 
-
-bootstrapApplication(App, { // He cambiado 'App' por 'AppComponent' que es el nombre convencional
-  providers: [
-    provideRouter(routes),
-
-    // NO se debe agregar 'provideCharts()' aquí.
-    // La configuración de los gráficos se hace importando
-    // NgChartsModule directamente en el componente que lo usa.
-  ]
-})
-  .catch(err => console.error(err));
+// NUEVO: Usamos la configuración importada 'appConfig'
+bootstrapApplication(App, appConfig)
+  .catch((err) => console.error(err));

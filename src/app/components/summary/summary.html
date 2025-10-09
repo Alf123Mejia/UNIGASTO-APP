@@ -9,11 +9,11 @@
       <span class="amount">-${{ totalExpenses() | number:'1.2-2' }}</span>
     </div>
   </div>
+
   <div class="progress-section">
     <div class="progress-bar">
-      <div class="progress-bar">
-        <div class="progress" [style.width]="progressWidth + '%'" [ngClass]="progressColorClass"></div>
-      </div>
-      <p>Has Usado {{ budgetUsage | number:'1.0-0' }}% De Tu Presupuesto.</p>
+      <div class="progress" [style.width]="progressWidth() + '%'" [ngClass]="progressColorClass()"></div>
     </div>
+    <p>Has Usado {{ budgetUsage() }}% De Tu Presupuesto.</p>
   </div>
+</div>

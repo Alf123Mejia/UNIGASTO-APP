@@ -1,27 +1,44 @@
-import { Component, inject, } from '@angular/core';
+// src/app/components/summary/summary.ts
+import { Component, inject, computed } from '@angular/core'; // NUEVO: Importamos `computed`
 import { FinancialService } from '../../services/financial';
-import { CommonModule } from '@angular/common'; // 
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-summary',
-   standalone: true,
+  standalone: true,
   imports: [CommonModule],
   templateUrl: './summary.html',
   styleUrl: './summary.scss'
 })
 export class Summary {
-  // Inyecta el servicio en el componente
   private financialService = inject(FinancialService);
 
-  // Expone los datos del servicio a la plantilla
+  // Exponemos las signals del servicio directamente
   balance = this.financialService.balance;
   totalExpenses = this.financialService.totalExpenses;
   budget = this.financialService.budget;
-  budgetUsage = this.financialService.budgetUsage;
 
-    // Esta función devuelve una clase CSS según el porcentaje de uso
-  get progressColorClass(): string {
-    const usage = this.budgetUsage;
+  // NUEVO: Creamos una signal `computed` para el uso del presupuesto.
+  // Esta se recalculará automáticamente cuando `totalExpenses` o `budget` cambien.
+  budgetUsage = computed(() => {
+    const expenses = this.totalExpenses();
+    const budget = this.budget();
+
+    if (budget === 0) {
+      return 0; // Evitamos divisiones por cero
+    }
+    const percentage = (expenses / budget) * 100;
+    return Math.round(percentage); // Redondeamos para mostrar un número entero
+  });
+
+  // NUEVO: `progressWidth` ahora es un `computed` que depende de `budgetUsage`
+  progressWidth = computed(() => {
+    return Math.min(this.budgetUsage(), 100); // El progreso no puede pasar de 100%
+  });
+
+  // NUEVO: `progressColorClass` también es un `computed` para cambiar el color reactivamente
+  progressColorClass = computed(() => {
+    const usage = this.budgetUsage();
     if (usage < 50) {
       return 'white';
     } else if (usage < 90) {
@@ -29,20 +46,5 @@ export class Summary {
     } else {
       return 'orange';
     }
-  }
-
-  get progressWidth(): number {
-    const usage = this.budgetUsage;
-    return Math.min(usage, 100);
-  }
-
-    get usageMessage(): string {
-    const usage = this.budgetUsage; // Correcto: Usa el getter directamente
-    if (usage > 100) {
-      return `¡Has excedido tu presupuesto por ${usage - 100}%!`;
-    }
-    return `Has Usado ${usage}% De Tu Presupuesto.`;
-  }
-
-
+  });
 }

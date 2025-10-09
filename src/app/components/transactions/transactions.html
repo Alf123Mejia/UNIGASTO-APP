@@ -1,11 +1,22 @@
 <div class="transactions-container">
   <div class="tabs">
-    <button>Diario</button>
-    <button>Semanal</button>
-    <button class="active">Mensual</button>
+    <button (click)="setFilter('Diario')" [class.active]="activeFilter() === 'Diario'">Diario</button>
+    <button (click)="setFilter('Semanal')" [class.active]="activeFilter() === 'Semanal'">Semanal</button>
+    <button (click)="setFilter('Mensual')" [class.active]="activeFilter() === 'Mensual'">Mensual</button>
   </div>
+
+  <div *ngIf="activeFilter() === 'Mensual'" class="month-navigator">
+    <button (click)="goToPreviousMonth()" class="nav-button">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+    <span class="month-display">{{ displayedMonth() | date:'LLLL yyyy' }}</span>
+    <button (click)="goToNextMonth()" class="nav-button" [disabled]="isNextMonthDisabled()">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+  </div>
+
   <div class="transaction-list">
-    <ng-container *ngFor="let transaction of transactions()">
+    <ng-container *ngFor="let transaction of filteredTransactions()">
       <div class="transaction-item" *ngIf="!editingTransaction || editingTransaction.id !== transaction.id">
         <div class="left">
           <div class="icon" [style.background-color]="transaction.iconColor">
@@ -13,7 +24,7 @@
           </div>
           <div class="details">
             <p class="description">{{ transaction.description }}</p>
-            <p class="date">{{ transaction.date }}</p>
+            <p class="date">{{ transaction.date | date:'short' }}</p>
           </div>
         </div>
         <div class="right">
@@ -31,6 +42,7 @@
           </div>
         </div>
       </div>
+
       <div class="transaction-form" *ngIf="editingTransaction && editingTransaction.id === transaction.id">
         <input type="text" [(ngModel)]="editedTransaction.description" placeholder="Descripción">
         <input type="number" [(ngModel)]="editedTransaction.amount" placeholder="Monto">
@@ -40,5 +52,9 @@
         </div>
       </div>
     </ng-container>
+
+    <div *ngIf="filteredTransactions().length === 0" class="no-transactions-message">
+      <p>No hay transacciones para este período.</p>
+    </div>
   </div>
 </div>
