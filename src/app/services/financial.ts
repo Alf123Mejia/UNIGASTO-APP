@@ -27,7 +27,7 @@ export interface Notification {
   isRead: boolean;
 }
 
-// --- DATOS INICIALES COMPLETOS ---
+// --- DATOS INICIALES ---
 const initialCategories: Category[] = [
     { name: 'Comida', icon: 'fas fa-utensils', color: '#ff6384' },
     { name: 'Transporte', icon: 'fas fa-car', color: '#36a2eb' },
@@ -49,6 +49,17 @@ const initialTransactions: Transaction[] = [
     }
 ];
 
+const INITIAL_KEYWORDS: { [key: string]: string[] } = {
+  'Comida': ['restaurante', 'pizza', 'hamburguesa', 'café', 'almuerzo', 'cena', 'supermercado'],
+  'Transporte': ['uber', 'taxi', 'gasolina', 'bus', 'transporte', 'parking'],
+  'Compras': ['ropa', 'zapatos', 'amazon', 'tienda', 'regalo'],
+  'Entretenimiento': ['cine', 'concierto', 'spotify', 'netflix', 'videojuego', 'bar'],
+  'Alquiler': ['alquiler', 'renta', 'arriendo'],
+  'Salario': ['salario', 'pago', 'nómina', 'ingreso']
+};
+
+const STOP_WORDS = ['un', 'una', 'de', 'la', 'el', 'los', 'las', 'con', 'mi', 'para', 'en', 'y', 'o'];
+
 // --- FUNCIÓN AUXILIAR ---
 function loadFromLocalStorage<T>(key: string, defaultValue: T): T {
   const storedValue = localStorage.getItem(key);
@@ -68,14 +79,14 @@ function loadFromLocalStorage<T>(key: string, defaultValue: T): T {
 })
 export class FinancialService {
 
-  // Objeto KEYS COMPLETO
   private readonly KEYS = {
     transactions: 'unigasto_transactions',
     categories: 'unigasto_categories',
     budget: 'unigasto_budget',
     savingsGoal: 'unigasto_savingsGoal',
     totalSaved: 'unigasto_totalSaved',
-    notifications: 'unigasto_notifications'
+    notifications: 'unigasto_notifications',
+    keywords: 'unigasto_keywords'
   };
 
   // --- SEÑALES DE ESTADO PRINCIPAL ---
@@ -85,6 +96,7 @@ export class FinancialService {
   private totalSavedSignal = signal<number>(loadFromLocalStorage(this.KEYS.totalSaved, 2500.00));
   private savingsGoalSignal = signal<number>(loadFromLocalStorage(this.KEYS.savingsGoal, 5000.00));
   private notificationsSignal = signal<Notification[]>(loadFromLocalStorage(this.KEYS.notifications, []));
+  private keywordsSignal = signal<{ [key: string]: string[] }>(loadFromLocalStorage(this.KEYS.keywords, INITIAL_KEYWORDS));
   
   // --- SEÑALES DERIVADAS (COMPUTADAS) ---
   private totalExpensesSignal = computed(() => {
@@ -101,14 +113,14 @@ export class FinancialService {
   });
 
   // --- SEÑALES PÚBLICAS ---
-  balance = this.balanceSignal;
-  totalExpenses = this.totalExpensesSignal;
-  budget = this.budgetSignal.asReadonly();
-  transactions = this.transactionsSignal.asReadonly();
-  allCategories = this.categoriesSignal.asReadonly();
-  notifications = this.notificationsSignal.asReadonly();
-  currentSavings = this.totalSavedSignal.asReadonly();
-  savingsGoal = this.savingsGoalSignal.asReadonly();
+  public balance = this.balanceSignal;
+  public totalExpenses = this.totalExpensesSignal;
+  public budget = this.budgetSignal.asReadonly();
+  public transactions = this.transactionsSignal.asReadonly();
+  public allCategories = this.categoriesSignal.asReadonly();
+  public notifications = this.notificationsSignal.asReadonly();
+  public currentSavings = this.totalSavedSignal.asReadonly();
+  public savingsGoal = this.savingsGoalSignal.asReadonly();
 
   constructor() {
     effect(() => {
@@ -118,11 +130,55 @@ export class FinancialService {
       localStorage.setItem(this.KEYS.savingsGoal, JSON.stringify(this.savingsGoalSignal()));
       localStorage.setItem(this.KEYS.totalSaved, JSON.stringify(this.totalSavedSignal()));
       localStorage.setItem(this.KEYS.notifications, JSON.stringify(this.notificationsSignal()));
+      localStorage.setItem(this.KEYS.keywords, JSON.stringify(this.keywordsSignal()));
       console.log('Datos persistidos en localStorage.');
     });
   }
 
   // --- MÉTODOS ---
+
+private learnKeywords(description: string, category: string): void {
+    const keywords = this.keywordsSignal();
+    
+    // LÓGICA MEJORADA: Esta expresión regular extrae únicamente palabras limpias, 
+    // ignorando números, comas, puntos, etc.
+    const words = (description.toLowerCase().match(/\b[a-z\u00E0-\u00FC]+\b/g) || [])
+      .filter(word => word.length > 2 && !STOP_WORDS.includes(word));
+
+    let updated = false;
+    if (!keywords[category]) {
+      keywords[category] = [];
+    }
+    
+    for (const word of words) {
+      // Si la palabra es nueva para esta categoría, la aprendemos
+      if (!keywords[category].includes(word)) {
+        console.log(`Aprendiendo nueva palabra: "${word}" para la categoría "${category}"`);
+        keywords[category].push(word);
+        updated = true;
+      }
+    }
+
+    if (updated) {
+      this.keywordsSignal.set({ ...keywords });
+    }
+  }
+
+  getSuggestedCategory(description: string): { category: string, isExpense: boolean } | null {
+    const lowerCaseDescription = description.toLowerCase();
+    const keywords = this.keywordsSignal();
+
+    for (const category in keywords) {
+      for (const keyword of keywords[category]) {
+        if (lowerCaseDescription.includes(keyword)) {
+          const isExpense = category !== 'Salario';
+          return { category, isExpense };
+        }
+      }
+    }
+    return null;
+  }
+
   addTransaction(newTransaction: Omit<Transaction, 'id' | 'icon' | 'iconColor'>): void {
     const categoryInfo = this.categoriesSignal().find(cat => cat.name === newTransaction.category);
     const fullTransaction: Transaction = {
@@ -131,6 +187,7 @@ export class FinancialService {
       iconColor: categoryInfo?.color || '#333'
     };
     this.transactionsSignal.update(current => [fullTransaction, ...current]);
+    this.learnKeywords(newTransaction.description, newTransaction.category);
     this.checkAndGenerateAlerts();
   }
   

@@ -1,4 +1,4 @@
-// src/app/components/add-transaction/add-transaction.component.ts
+// src/app/components/add-transaction/add-transaction.ts
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -12,7 +12,7 @@ import { FinancialService } from '../../services/financial';
   templateUrl: './add-transaction.html',
   styleUrl: './add-transaction.scss'
 })
-export class AddTransaction { // Corregido: 'AddTransaction' a 'AddTransactionComponent'
+export class AddTransaction {
   private financialService = inject(FinancialService);
   private router = inject(Router);
 
@@ -27,28 +27,41 @@ export class AddTransaction { // Corregido: 'AddTransaction' a 'AddTransactionCo
 
   toggleType(isExpense: boolean): void {
     this.isExpense = isExpense;
-    if (!this.isExpense) {
+    if (!this.isExpense && this.category !== 'Salario') {
       this.category = 'Salario';
     }
   }
+
+  // ---- ¡AQUÍ ESTÁ LA LÓGICA QUE FALTABA! ----
+  /**
+   * Este método se llama cada vez que el usuario escribe en el campo de descripción.
+   * Le pide al servicio una sugerencia de categoría.
+   */
+  onDescriptionChange(description: string): void {
+    const suggestion = this.financialService.getSuggestedCategory(description);
+    
+    // Imprime en la consola para depuración
+    console.log(`Buscando sugerencia para: "${description}". Resultado:`, suggestion);
+
+    if (suggestion) {
+      this.category = suggestion.category;
+      this.isExpense = suggestion.isExpense;
+    }
+  }
+  // -------------------------------------------
 
   addTransaction(): void {
     if (this.amount && this.description && this.category) {
       const finalAmount = this.isExpense ? -Math.abs(this.amount) : Math.abs(this.amount);
       
-      const newTransaction = {
-        // Corregido: Se añade el id
-        id: Date.now(),
+      // Llamamos al método `addTransaction` del servicio con el formato correcto
+      this.financialService.addTransaction({
         description: this.description,
-        date: new Date().toISOString(), // Usamos un formato estándar universal
+        date: new Date().toISOString(),
         amount: finalAmount,
         category: this.category,
-        // Corregido: Se añade el iconColor
-        icon: this.categories().find(cat => cat.name === this.category)?.icon || 'fas fa-question-circle',
-        iconColor: this.categories().find(cat => cat.name === this.category)?.color || '#333'
-      };
+      });
 
-      this.financialService.addTransaction(newTransaction);
       this.router.navigate(['/']);
     }
   }
