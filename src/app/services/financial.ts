@@ -27,14 +27,26 @@ export interface Notification {
   isRead: boolean;
 }
 
-// --- DATOS INICIALES ---
+// --- NUEVA ESTRUCTURA DE CATEGORÍAS: EDICIÓN "EL SALVADOR" ---
 const initialCategories: Category[] = [
-    { name: 'Comida', icon: 'fas fa-utensils', color: '#ff6384' },
-    { name: 'Transporte', icon: 'fas fa-car', color: '#36a2eb' },
-    { name: 'Compras', icon: 'fas fa-shopping-bag', color: '#cc65fe' },
-    { name: 'Entretenimiento', icon: 'fas fa-film', color: '#ffce56' },
-    { name: 'Alquiler', icon: 'fas fa-home', color: '#4bc0c0' },
-    { name: 'Salario', icon: 'fas fa-money-bill-wave', color: '#9966ff' }
+    { name: 'Supermercado', icon: 'fas fa-shopping-cart', color: '#2ecc71' },
+    { name: 'Restaurantes', icon: 'fas fa-utensils', color: '#e74c3c' },
+    { name: 'Comida Rápida', icon: 'fas fa-hamburger', color: '#f39c12' },
+    { name: 'Cafés y Postres', icon: 'fas fa-coffee', color: '#9b59b6' },
+    { name: 'Antojos y Calle', icon: 'fas fa-store', color: '#f1c40f' },
+    { name: 'Transporte', icon: 'fas fa-car', color: '#3498db' },
+    { name: 'Delivery', icon: 'fas fa-box', color: '#1abc9c' },
+    { name: 'Ropa y Calzado', icon: 'fas fa-tshirt', color: '#e67e22' },
+    { name: 'Accesorios y Belleza', icon: 'fas fa-gem', color: '#34495e' },
+    { name: 'Compras Varias', icon: 'fas fa-dolly', color: '#95a5a6' },
+    { name: 'Suscripciones', icon: 'fas fa-sync-alt', color: '#c0392b' },
+    { name: 'Servicios del Hogar', icon: 'fas fa-bolt', color: '#7f8c8d' },
+    { name: 'Ocio y Salidas', icon: 'fas fa-glass-cheers', color: '#16a085' },
+    { name: 'Hobbies y Pasatiempos', icon: 'fas fa-gamepad', color: '#2980b9' },
+    { name: 'Salud y Bienestar', icon: 'fas fa-heartbeat', color: '#8e44ad' },
+    { name: 'Educación', icon: 'fas fa-graduation-cap', color: '#2c3e50' },
+    { name: 'Otros Gastos', icon: 'fas fa-tag', color: '#bdc3c7' },
+    { name: 'Ingresos', icon: 'fas fa-money-bill-wave', color: '#27ae60' }
 ];
 
 const initialTransactions: Transaction[] = [
@@ -49,13 +61,120 @@ const initialTransactions: Transaction[] = [
     }
 ];
 
+// --- DICCIONARIO DE PALABRAS CLAVE: EDICIÓN EXPERTO "EL SALVADOR" ---
 const INITIAL_KEYWORDS: { [key: string]: string[] } = {
-  'Comida': ['restaurante', 'pizza', 'hamburguesa', 'café', 'almuerzo', 'cena', 'supermercado'],
-  'Transporte': ['uber', 'taxi', 'gasolina', 'bus', 'transporte', 'parking'],
-  'Compras': ['ropa', 'zapatos', 'amazon', 'tienda', 'regalo'],
-  'Entretenimiento': ['cine', 'concierto', 'spotify', 'netflix', 'videojuego', 'bar'],
-  'Alquiler': ['alquiler', 'renta', 'arriendo'],
-  'Salario': ['salario', 'pago', 'nómina', 'ingreso']
+  'Supermercado': [
+    // Cadenas Principales
+    'súper selectos', 'walmart', 'despensa de don juan', 'pricesmart', 'despensa familiar',
+    // Locales y de Barrio
+    'super keny', 'el baratillo', 'mercado central', 'la tiendona', 'mercado',
+    // Productos
+    'huevos', 'leche', 'pan', 'jamón', 'queso', 'pollo', 'carne', 'frutas', 'verduras', 'jabón', 'shampoo'
+  ],
+  'Restaurantes': [
+    // Populares y de Centros Comerciales
+    'la pampa', 'tony romas', 'olive garden', 'rustico', 'pueblo viejo', 'el zócalo', 'la siciliana', 'crepe lovers',
+    // Específicos
+    'sushi king', 'sushi itto', 'go green', 'krisppy\'s', 'lomo y la aguja', 'el bodegón', 'clavo y canela', 'el rosal'
+  ],
+  'Comida Rápida': [
+    // Cadenas Internacionales
+    'mcdonald\'s', 'burger king', 'wendy\'s', 'pizza hut', 'papa john\'s', 'little caesars', 'subway', 'quiznos',
+    // Cadenas Nacionales/Regionales
+    'pollo campero', 'pollo campestre', 'pollolandia', 'don pollo', 'mister donut', 'china wok', 'donkeys'
+  ],
+  'Cafés y Postres': [
+    // Cadenas de Café
+    'starbucks', 'juan valdez', 'ben\'s coffee', 'the coffee cup', 'viva espresso',
+    // Postres y Helados
+    'pastelería ban ban', 'la neveria', 'boston', 'llao llao', 'mister mangoneadas', 'sarita', 'cheesecake factory'
+  ],
+  'Antojos y Calle': [
+    // Clásicos Salvadoreños
+    'pupusas', 'pupuseria', 'elotes locos', 'yuca frita', 'panes con pollo', 'empanadas', 'pastelitos', 'churros',
+    // Bebidas y otros
+    'minutas', 'frescos', 'sorbete de carretón', 'típicos'
+  ],
+  'Transporte': [
+    // Combustible
+    'gasolina', 'texaco', 'gasolinera uno', 'puma energy', 'acsa', 'epic',
+    // Apps y Taxis
+    'uber', 'indrive', 'taxi',
+    // Transporte Público
+    'pasaje de bus', 'sitrramss', 'bus', 'colectivo'
+  ],
+  'Delivery': [
+    // Apps
+    'pedidosya', 'hugo app', 'ubereats',
+    // Términos Genéricos
+    'delivery', 'envío a domicilio', 'mandadito'
+  ],
+  'Ropa y Calzado': [
+    // Tiendas por Departamento
+    'siman', 'almacenes siman', 'carrion',
+    // Tiendas de Ropa
+    'zara', 'bershka', 'pull&bear', 'stradivarius', 'forever 21', 'md', 'american eagle',
+    // Zapatos
+    'payless', 'adoc', 'nike', 'adidas', 'skechers'
+  ],
+  'Accesorios y Belleza': [
+    // Belleza y Cuidado
+    'kiko milano', 'maquillaje', 'perfume', 'cremas', 'salón de belleza', 'barbería',
+    // Accesorios
+    'reloj', 'lentes', 'cartera', 'audífonos', 'claire\'s'
+  ],
+  'Compras Varias': [
+    // Tiendas de Variedades
+    'dollar city', 'miniso', 'ylufa', 'tiendas de chinos', 'todo a dolar',
+    // Compras Online
+    'amazon', 'temu', 'shein', 'ebay', 'aerocasillas'
+  ],
+  'Suscripciones': [
+    // Streaming Video/Música
+    'netflix', 'spotify', 'hbo max', 'disney+', 'prime video', 'apple music', 'youtube premium', 'crunchyroll',
+    // Software y Nube
+    'icloud', 'google drive', 'office 356', 'adobe', 'canva', 'chatgpt plus'
+  ],
+  'Servicios del Hogar': [
+    // Recibos
+    'recibo de luz', 'aes', 'caess', 'recibo de agua', 'anda',
+    // Comunicaciones
+    'tigo', 'claro', 'recarga', 'saldo', 'plan de datos', 'internet residencial'
+  ],
+  'Ocio y Salidas': [
+    // Lugares
+    'cine', 'cinépolis', 'cinemark', 'bar', 'discoteca', 'el tunco', 'paseo el carmen', 'volcán', 'lago de coatepeque',
+    // Actividades
+    'concierto', 'fiesta', 'salida con amigos', 'entrada a evento'
+  ],
+  'Hobbies y Pasatiempos': [
+    // Gaming
+    'steam', 'playstation', 'ps plus', 'nintendo', 'xbox', 'fortnite', 'videojuego',
+    // Otros
+    'valakut', 'carisma', 'libros', 'librería la ceiba', 'clases de', 'figuras'
+  ],
+  'Salud y Bienestar': [
+    // Farmacias
+    'farmacia san nicolás', 'farmavalue', 'farmacias económicas', 'farmacia', 'medicinas',
+    // Bienestar
+    'smartfit', 'gimnasio', 'gym', 'consulta médica', 'dentista', 'suplementos'
+  ],
+  'Educación': [
+    // Universidades
+    'universidad', 'ufg', 'uca', 'ues', 'matias delgado', 'evangélica',
+    // Gastos Relacionados
+    'matrícula', 'colegiatura', 'cuota', 'libros de texto', 'fotocopias', 'papelería', 'gráfica'
+  ],
+  'Otros Gastos': [
+    // Varios
+    'mascota', 'veterinario', 'regalo', 'donación', 'ferretería', 'vidri', 'freund',
+    // Financieros
+    'retiro de efectivo', 'cajero', 'comisión bancaria', 'pago de tarjeta'
+  ],
+  'Ingresos': [
+    // Fijos y Variables
+    'salario', 'pago', 'nómina', 'mesada', 'remesa', 'beca', 'freelance', 'venta', 'aguinaldo'
+  ]
 };
 
 const STOP_WORDS = ['un', 'una', 'de', 'la', 'el', 'los', 'las', 'con', 'mi', 'para', 'en', 'y', 'o'];
