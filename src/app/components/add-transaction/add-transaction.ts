@@ -37,15 +37,17 @@ export class AddTransaction {
    * Este método se llama cada vez que el usuario escribe en el campo de descripción.
    * Le pide al servicio una sugerencia de categoría.
    */
-  onDescriptionChange(description: string): void {
+onDescriptionChange(description: string): void {
     const suggestion = this.financialService.getSuggestedCategory(description);
-    
-    // Imprime en la consola para depuración
-    console.log(`Buscando sugerencia para: "${description}". Resultado:`, suggestion);
+
+    console.log(`Buscando sugerencia para: "${description}". Resultado:`, suggestion); // Línea de depuración
 
     if (suggestion) {
       this.category = suggestion.category;
-      this.isExpense = suggestion.isExpense;
+      // --- ¡ESTA LÍNEA ES LA CLAVE PARA EL BOTÓN Y EL GUARDADO! ---
+      // Actualiza el estado 'isExpense' basado en la sugerencia del servicio.
+      this.isExpense = suggestion.isExpense; 
+      // -------------------------------------------
     }
   }
   // -------------------------------------------
