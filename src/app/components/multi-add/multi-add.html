@@ -1,0 +1,64 @@
+<div class="multi-add-container">
+  <div class="multi-add-header">
+    <a routerLink="/" class="back-button"><i class="fas fa-arrow-left"></i></a>
+    <h1>Agregar Múltiples Gastos</h1>
+  </div>
+
+  <div class="scan-section">
+    <label for="receipt-upload" class="scan-button" [class.disabled]="isLoading()">
+      <i class="fas fa-camera"></i>
+      {{ isLoading() ? 'Procesando Imagen...' : 'Escanear Factura (Seleccionar Foto)' }}
+    </label>
+    <input type="file" id="receipt-upload" accept="image/*" (change)="onFileSelected($event)" [disabled]="isLoading()">
+  </div>
+
+  <div *ngIf="isLoading()" class="loading-indicator">
+    Analizando factura, por favor espera... <i class="fas fa-spinner fa-spin"></i>
+  </div>
+
+  <div *ngIf="errorMessage()" class="error-message global-error">
+    <i class="fas fa-exclamation-circle"></i> {{ errorMessage() }}
+  </div>
+
+
+  <form [formGroup]="multiExpenseForm" (ngSubmit)="onSubmit()">
+
+    <div formArrayName="expenseItems">
+      <p *ngIf="expenseItems.length === 0 && !isLoading() && !errorMessage()" class="no-items-message">
+        Usa el botón de escanear o añade gastos manualmente.
+      </p>
+
+      <div *ngFor="let item of expenseItems.controls; let i=index" [formGroupName]="i" class="expense-item-row">
+        <div class="input-group description-group">
+          <input placeholder="Descripción del gasto" type="text" [id]="'description' + i" formControlName="description" (input)="suggestCategoryForRow(i)" required>
+           <div *ngIf="item.get('description')?.invalid && item.get('description')?.touched" class="error-message">Requerido</div>
+        </div>
+        <div class="input-row">
+          <div class="input-group amount-group">
+            <input placeholder="Monto" type="number" [id]="'amount' + i" formControlName="amount" required min="0.01" step="0.01">
+            <div *ngIf="item.get('amount')?.invalid && item.get('amount')?.touched" class="error-message">>0 Req.</div>
+          </div>
+          <div class="input-group category-group">
+            <select [id]="'category' + i" formControlName="category" required>
+              <option value="" disabled>Categoría...</option>
+              <option *ngFor="let cat of categories" [value]="cat.name">{{ cat.name }}</option>
+            </select>
+            <div *ngIf="item.get('category')?.invalid && item.get('category')?.touched" class="error-message">Req.</div>
+          </div>
+          <button type="button" (click)="removeExpenseItem(i)" class="remove-button" title="Eliminar fila">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <button type="button" (click)="addExpenseItem()" class="add-item-button">
+      <i class="fas fa-plus"></i> Añadir Gasto Manualmente
+    </button>
+
+    <button type="submit" class="save-all-button" [disabled]="multiExpenseForm.invalid || expenseItems.length === 0 || isLoading()">
+      Guardar Gastos
+    </button>
+
+  </form>
+</div>

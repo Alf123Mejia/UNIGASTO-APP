@@ -1,0 +1,19 @@
+// functions/tsconfig.json
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "outDir": "lib",
+    "sourceMap": true,
+    "strict": true,
+    "target": "es2017",
+    "esModuleInterop": true, // <--- ¡ESTA ES LA LÍNEA CLAVE!
+    "skipLibCheck": true,     // <-- Añadir esta puede ayudar a veces
+    "forceConsistentCasingInFileNames": true // <-- Añadir esta puede ayudar a veces
+  },
+  "compileOnSave": true,
+  "include": [
+    "src"
+  ]
+}

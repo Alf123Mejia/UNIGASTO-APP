@@ -5,6 +5,7 @@ import { ApplicationConfig, LOCALE_ID, provideZoneChangeDetection } from '@angul
 import { provideRouter } from '@angular/router';
 import { registerLocaleData } from '@angular/common';
 import localeEs from '@angular/common/locales/es'; // Importamos el paquete de idioma español
+import { provideHttpClient } from '@angular/common/http';
 
 import { routes } from './app.routes';
 
@@ -15,7 +16,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
-
+    provideHttpClient(), // <-- ASEGÚRATE DE AÑADIR ESTA LÍNEA
     // NUEVO: Le decimos a Angular que use 'es' (español) como el idioma por defecto para toda la app
     { provide: LOCALE_ID, useValue: 'es' }
   ]

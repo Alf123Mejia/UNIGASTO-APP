@@ -28,8 +28,11 @@
       <button type="button" [class.active]="!isExpense" (click)="toggleType(false)">Ingreso</button>
     </div>
 
+    <button type="button" routerLink="/multi-add" class="multi-add-link">
+      <i class="fas fa-list-ul"></i> Agregar Varios Gastos (Ej: Factura)
+    </button>
     <button type="submit" [disabled]="!transactionForm.valid" class="submit-button">
-      Agregar
+      Agregar Transacción Única
     </button>
   </form>
 </div>

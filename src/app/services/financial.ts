@@ -27,7 +27,7 @@ export interface Notification {
   isRead: boolean;
 }
 
-// --- ESTRUCTURA DE CATEGORÍAS ---
+// --- NUEVA ESTRUCTURA DE CATEGORÍAS: EDICIÓN "EL SALVADOR" ---
 const initialCategories: Category[] = [
     { name: 'Supermercado', icon: 'fas fa-shopping-cart', color: '#2ecc71' },
     { name: 'Restaurantes', icon: 'fas fa-utensils', color: '#e74c3c' },
@@ -50,9 +50,9 @@ const initialCategories: Category[] = [
     { name: 'Ingresos', icon: 'fas fa-money-bill-wave', color: '#27ae60' }
 ];
 
-const initialTransactions: Transaction[] = [];
+const initialTransactions: Transaction[] = []; // Empezamos sin transacciones
 
-// --- DICCIONARIO DE PALABRAS CLAVE ---
+// --- DICCIONARIO DE PALABRAS CLAVE: EDICIÓN EXPERTO "EL SALVADOR" ---
 const INITIAL_KEYWORDS: { [key: string]: string[] } = {
   'Supermercado': ['súper selectos', 'walmart', 'despensa de don juan', 'pricesmart', 'despensa familiar','super keny', 'el baratillo', 'mercado central', 'la tiendona', 'mercado','huevos', 'leche', 'pan', 'jamón', 'queso', 'pollo', 'carne', 'frutas', 'verduras', 'jabón', 'shampoo'],
   'Restaurantes': ['la pampa', 'tony romas', 'olive garden', 'rustico', 'pueblo viejo', 'el zócalo', 'la siciliana', 'crepe lovers','sushi king', 'sushi itto', 'go green', 'krisppy\'s', 'lomo y la aguja', 'el bodegón', 'clavo y canela', 'el rosal'],
@@ -81,25 +81,36 @@ const STOP_WORDS = ['un', 'una', 'de', 'la', 'el', 'los', 'las', 'con', 'mi', 'p
 function loadFromLocalStorage<T>(key: string, defaultValue: T): T {
   const storedValue = localStorage.getItem(key);
   if (storedValue) {
-    try { return JSON.parse(storedValue); } catch (e) { console.error('Error parsing localStorage item:', key, e); return defaultValue; }
+    try {
+      return JSON.parse(storedValue);
+    } catch (e) {
+      console.error('Error parsing localStorage item:', key, e);
+      return defaultValue;
+    }
   }
   return defaultValue;
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class FinancialService {
 
   private readonly KEYS = {
-    transactions: 'unigasto_transactions', categories: 'unigasto_categories', budget: 'unigasto_budget',
-    savingsGoal: 'unigasto_savingsGoal', totalSaved: 'unigasto_totalSaved',
-    notifications: 'unigasto_notifications', keywords: 'unigasto_keywords'
+    transactions: 'unigasto_transactions',
+    categories: 'unigasto_categories',
+    budget: 'unigasto_budget',
+    savingsGoal: 'unigasto_savingsGoal',
+    totalSaved: 'unigasto_totalSaved',
+    notifications: 'unigasto_notifications',
+    keywords: 'unigasto_keywords'
   };
 
   // --- SEÑALES DE ESTADO PRINCIPAL ---
   private transactionsSignal = signal<Transaction[]>(loadFromLocalStorage(this.KEYS.transactions, initialTransactions));
   private categoriesSignal = signal<Category[]>(loadFromLocalStorage(this.KEYS.categories, initialCategories));
   private budgetSignal = signal<number>(loadFromLocalStorage(this.KEYS.budget, 1200.00));
-  private totalSavedSignal = signal<number>(loadFromLocalStorage(this.KEYS.totalSaved, 0)); // Empieza en CERO
+  private totalSavedSignal = signal<number>(loadFromLocalStorage(this.KEYS.totalSaved, 0)); // Reseteado a CERO
   private savingsGoalSignal = signal<number>(loadFromLocalStorage(this.KEYS.savingsGoal, 100.00)); // Meta de ejemplo
   private notificationsSignal = signal<Notification[]>(loadFromLocalStorage(this.KEYS.notifications, []));
   private keywordsSignal = signal<{ [key: string]: string[] }>(loadFromLocalStorage(this.KEYS.keywords, INITIAL_KEYWORDS));
@@ -126,7 +137,7 @@ export class FinancialService {
   public transactions = this.transactionsSignal.asReadonly();
   public allCategories = this.categoriesSignal.asReadonly();
   public notifications = this.notificationsSignal.asReadonly();
-  public currentSavings = this.totalSavedSignal.asReadonly();
+  public currentSavings = this.totalSavedSignal.asReadonly(); // Muestra el total acumulado en ahorros
   public savingsGoal = this.savingsGoalSignal.asReadonly();
 
   constructor() {
@@ -167,7 +178,7 @@ export class FinancialService {
     for (const category in keywords) {
       for (const keyword of keywords[category]) {
         if (lowerCaseDescription.includes(keyword)) {
-          const isExpense = category !== 'Ingresos';
+          const isExpense = category !== 'Ingresos'; // 'Ahorro' se trata como gasto aquí para el botón
           return { category, isExpense };
         }
       }
@@ -207,11 +218,13 @@ export class FinancialService {
     const originalTransaction = currentTransactions.find(t => t.id === updatedTransaction.id);
     if (!originalTransaction) return;
 
+    // Asegurar signo correcto del monto según la categoría actualizada
     if (updatedTransaction.category === 'Ahorro' || updatedTransaction.category !== 'Ingresos') { updatedTransaction.amount = -Math.abs(updatedTransaction.amount); }
     else { updatedTransaction.amount = Math.abs(updatedTransaction.amount); }
 
     this.transactionsSignal.update(current => current.map(t => t.id === updatedTransaction.id ? updatedTransaction : t));
 
+    // Ajustar Total Ahorrado si cambió a/desde Ahorro o si el monto de Ahorro cambió
     if (originalTransaction.category === 'Ahorro' || updatedTransaction.category === 'Ahorro') {
         let savedAmountDifference = 0;
         if (originalTransaction.category === 'Ahorro') { savedAmountDifference -= Math.abs(originalTransaction.amount); }
@@ -271,6 +284,7 @@ export class FinancialService {
     const currentTrans = this.transactionsSignal();
     if(currentTrans.length === 0) return;
     const lastTransaction = currentTrans[0];
+    // Solo generar alerta si la última transacción fue un GASTO REAL (no Ahorro ni Ingreso)
     if (lastTransaction && lastTransaction.amount < 0 && lastTransaction.category !== 'Ahorro') {
         if (usage >= 100) { this.addNotification({title: 'Presupuesto Excedido', message: `Te has pasado del 100% de tu presupuesto.`, icon: 'fas fa-exclamation-circle', type: 'budget', date: new Date().toISOString()}); }
         else if (usage >= 90) { this.addNotification({title: 'Alerta de Presupuesto', message: `Has usado el ${usage.toFixed(0)}% de tu presupuesto mensual.`, icon: 'fas fa-exclamation-triangle', type: 'budget', date: new Date().toISOString()}); }
@@ -280,6 +294,7 @@ export class FinancialService {
   get budgetUsage(): number {
     const budget = this.budgetSignal();
     if (budget === 0) return 0;
+    // Usa totalExpensesSignal que ya excluye ahorros
     return (this.totalExpensesSignal() / budget) * 100;
   }
 }

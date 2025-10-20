@@ -126,3 +126,36 @@ form {
     cursor: not-allowed;
   }
 }
+
+// ESTILOS para el botón/enlace de múltiples gastos
+.multi-add-link {
+  background-color: #f0f0f0; // Fondo gris claro
+  color: #555; // Texto oscuro
+  border: 1px solid #ddd;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px; // Ligeramente más pequeño
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.2s, border-color 0.2s;
+  margin-top: 10px; // Espacio arriba
+  text-decoration: none; // Asegurar que no parezca un enlace
+  display: block; // Ocupar ancho
+  width: 100%; // Ocupar ancho
+  box-sizing: border-box; // Incluir padding/border en el ancho
+
+  i {
+    margin-right: 8px; // Espacio icono-texto
+  }
+
+  &:hover {
+    background-color: #e0e0e0;
+    border-color: #ccc;
+  }
+}
+
+// Ajuste al botón principal
+.submit-button {
+  margin-top: 15px; // Espacio entre los dos botones
+}

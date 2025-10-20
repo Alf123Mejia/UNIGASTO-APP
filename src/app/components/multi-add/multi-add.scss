@@ -1,0 +1,239 @@
+/* src/app/components/multi-add/multi-add.scss */
+@use "sass:color"; // Importa el módulo de color
+
+// Variables de colores (sin cambios)
+$color-primary: #33a34a;
+$color-background: #f5f5f5;
+$color-white: #ffffff;
+$color-border: #ddd;
+$color-text-dark: #333;
+$color-text-light: #555;
+$color-error: #e74c3c;
+$color-remove: #c0392b;
+
+.multi-add-container {
+  min-height: 100vh;
+  background-color: $color-background;
+  padding-bottom: 80px; // Espacio para navbar
+}
+
+.multi-add-header {
+  background-color: $color-primary;
+  color: $color-white;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  margin-bottom: 20px;
+
+  h1 { font-size: 24px; margin: 0; font-weight: 600; }
+  .back-button { font-size: 24px; color: $color-white; text-decoration: none; }
+}
+
+form {
+  padding: 0 15px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.expense-item-row {
+  background-color: $color-white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+}
+
+.input-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  label {
+    font-weight: 500;
+    font-size: 12px;
+    color: $color-text-light;
+    margin-bottom: 2px;
+  }
+
+  input[type="text"], input[type="number"], select {
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid $color-border;
+    font-size: 14px;
+    width: 100%;
+    box-sizing: border-box;
+
+    &:focus {
+      outline: none;
+      border-color: $color-primary;
+      box-shadow: 0 0 0 2px rgba($color-primary, 0.2);
+    }
+     &.ng-invalid.ng-touched {
+        border-color: $color-error;
+     }
+  }
+
+  &.description-group { flex-grow: 1; }
+  &.amount-group { flex-basis: 90px; flex-shrink: 0; }
+  &.category-group { flex-basis: 120px; flex-shrink: 0; }
+}
+
+.remove-button {
+  background: none;
+  border: none;
+  color: $color-remove;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 10px 5px;
+  margin-left: 5px;
+  line-height: 1;
+  align-self: center;
+  margin-bottom: 2px;
+}
+
+.add-item-button {
+  // Corregido lighten
+  background-color: color.adjust($color-primary, $lightness: 45%);
+  color: $color-primary;
+  border: 1px dashed $color-primary;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.2s;
+  margin-top: 5px;
+
+  i { margin-right: 6px; }
+
+  &:hover {
+    // Corregido lighten
+    background-color: color.adjust($color-primary, $lightness: 40%);
+  }
+}
+
+.save-all-button {
+  background-color: $color-primary;
+  color: $color-white;
+  border: none;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 15px;
+
+  &:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+}
+
+.error-message {
+  color: $color-error;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+// --- ESTILOS PARA ESCANEO ---
+.scan-section {
+  padding: 10px 15px;
+  margin-bottom: 15px;
+}
+
+.scan-button {
+  display: block;
+  background-color: $color-primary;
+  color: $color-white;
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+
+  i {
+    margin-right: 10px;
+  }
+
+  &:hover {
+    // Corregido darken
+    background-color: color.adjust($color-primary, $lightness: -10%);
+  }
+
+  &.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    // Corregido lighten
+    background-color: color.adjust($color-primary, $lightness: 20%);
+  }
+}
+
+#receipt-upload {
+  display: none;
+}
+
+.loading-indicator {
+  text-align: center;
+  padding: 20px;
+  font-size: 16px;
+  color: $color-text-light;
+  i { margin-left: 10px; }
+}
+
+.global-error {
+  // Corregido lighten
+  background-color: color.adjust($color-error, $lightness: 35%);
+  // Corregido darken
+  color: color.adjust($color-error, $lightness: -10%);
+  // Corregido lighten
+  border: 1px solid color.adjust($color-error, $lightness: 20%);
+  padding: 12px;
+  border-radius: 6px;
+  margin: 0 15px 15px;
+  text-align: center;
+  font-size: 14px;
+  i { margin-right: 5px; }
+}
+
+.input-group input::placeholder, .input-group select {
+  color: #999;
+}
+.input-group select option[value=""] {
+    color: #999;
+}
+.no-items-message { // Estilo añadido para el mensaje
+  text-align: center;
+  color: $color-text-light;
+  padding: 20px;
+  font-style: italic;
+}
+
+// Ajustes responsive
+@media (max-width: 400px) {
+  .input-row {
+     flex-wrap: wrap;
+  }
+  .input-group.amount-group, .input-group.category-group {
+      flex-basis: calc(50% - 5px);
+  }
+  .remove-button {
+      margin-left: auto;
+  }
+}

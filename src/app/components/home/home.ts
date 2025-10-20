@@ -5,6 +5,7 @@ import { Summary } from '../summary/summary';
 import { SavingsGoal } from '../savings-goal/savings-goal';
 import { Transactions } from '../transactions/transactions';
 import { FinancialService } from '../../services/financial';
+import { RouterModule } from '@angular/router'; // <-- ¿Está esta línea?
 
 @Component({
   selector: 'app-home',
@@ -14,7 +15,8 @@ import { FinancialService } from '../../services/financial';
     Header,
     Summary,
     SavingsGoal,
-    Transactions
+    Transactions,
+    RouterModule // <-- ¿Está RouterModule aquí?
   ],
   templateUrl: './home.html',
   styleUrl: './home.scss'
