@@ -109,7 +109,7 @@ export class FinancialService {
   // --- SEÑALES DE ESTADO PRINCIPAL ---
   private transactionsSignal = signal<Transaction[]>(loadFromLocalStorage(this.KEYS.transactions, initialTransactions));
   private categoriesSignal = signal<Category[]>(loadFromLocalStorage(this.KEYS.categories, initialCategories));
-  private budgetSignal = signal<number>(loadFromLocalStorage(this.KEYS.budget, 1200.00));
+  private budgetSignal = signal<number>(loadFromLocalStorage(this.KEYS.budget, 100.00));
   private totalSavedSignal = signal<number>(loadFromLocalStorage(this.KEYS.totalSaved, 0)); // Reseteado a CERO
   private savingsGoalSignal = signal<number>(loadFromLocalStorage(this.KEYS.savingsGoal, 100.00)); // Meta de ejemplo
   private notificationsSignal = signal<Notification[]>(loadFromLocalStorage(this.KEYS.notifications, []));

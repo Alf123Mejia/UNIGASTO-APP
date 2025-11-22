@@ -9,29 +9,24 @@ import busboy = require('busboy');
 import * as os from "os";
 import * as path from "path";
 import * as fs from "fs";
-import * as stream from "stream"; // Necesario para el tipo Readable
+import * as stream from "stream";
 import vision from "@google-cloud/vision";
 
-// NO inicializar aquí para evitar timeouts
-// const visionClient = new vision.ImageAnnotatorClient();
-
 export const processReceipt = functions.https.onRequest((req, res) => {
-  // Llama directamente a la función cors que importamos con require
-  cors(req, res, async () => {
-    if (req.method !== "POST") {
+  cors(req, res, () => {
+    if (req.method !== 'POST') {
+      functions.logger.warn("Método no permitido:", req.method);
       res.set('Allow', 'POST');
-      res.status(405).send({ error: "Method Not Allowed" });
+      res.status(405).send({ error: 'Method Not Allowed' });
       return;
     }
 
-    // Tipado explícito usando el tipo inferido de Busboy con require
     let bb: busboy.Busboy;
     try {
-      // Usa el constructor obtenido con require
       bb = busboy({ headers: req.headers });
     } catch (e) {
-      console.error("Error inicializando Busboy:", e);
-      res.status(400).send({ error: "Cabeceras inválidas." });
+      functions.logger.error("Error inicializando Busboy:", e, { headers: req.headers });
+      res.status(400).send({ error: 'Cabeceras inválidas.' });
       return;
     }
 
@@ -39,129 +34,160 @@ export const processReceipt = functions.https.onRequest((req, res) => {
     const fileWrites: Promise<void>[] = [];
     let imageFilePath = "";
     let fileDetected = false;
-    let fileError = false;
+    let fileError: Error | null = null;
 
-    // Tipos explícitos usando los tipos del namespace Busboy inferido por require
-    bb.on("file", (fieldname: string, file: stream.Readable, info: busboy.FileInfo) => {
+    bb.on('file', (fieldname: string, file: stream.Readable, info: busboy.FileInfo) => {
+        if (fileError) { file.resume(); return; }
+
         fileDetected = true;
-        // Quitando 'encoding' para evitar el warning TS6133
         const { filename = 'unknownfile', mimeType } = info;
-        console.log(`Evento 'file' recibido: fieldname=${fieldname}, filename=${filename}, mimeType=${mimeType}`);
+        functions.logger.info(`Archivo recibido: fieldname=${fieldname}, filename=${filename}, mimeType=${mimeType}`);
 
-        if (!mimeType.startsWith("image/")) {
-          console.error("Tipo de archivo no soportado:", mimeType);
-          fileError = true;
-          file.resume(); // Importante consumir el stream
+        if (fieldname !== 'file') {
+            functions.logger.warn(`Campo de archivo ignorado: ${fieldname}`);
+            file.resume();
+            return;
+        }
+        if (!mimeType.startsWith('image/')) {
+          functions.logger.error(`Tipo no soportado: ${mimeType}`);
+          fileError = new Error('Solo se permiten imágenes.');
+          file.resume();
           return;
         }
 
-        console.log(`Procesando archivo: ${filename} (${mimeType})`);
         const uniqueFilename = `${Date.now()}-${path.basename(filename)}`;
         const filepath = path.join(tmpdir, uniqueFilename);
         imageFilePath = filepath;
+        functions.logger.info(`Guardando en: ${filepath}`);
 
         const writeStream = fs.createWriteStream(filepath);
         file.pipe(writeStream);
 
         const promise = new Promise<void>((resolve, reject) => {
-          file.on("end", () => console.log(`Stream 'end' para ${filename}`));
-          writeStream.on("finish", () => { console.log(`WriteStream 'finish' para ${filepath}`); resolve(); });
-          writeStream.on("error", (err: Error) => { console.error(`Error escribiendo archivo ${filepath}:`, err); fileError = true; reject(err); });
-          file.on("error", (err: Error) => { console.error(`Error leyendo stream para ${filename}:`, err); fileError = true; reject(err); });
+            file.on('error', (err: Error) => { functions.logger.error(`Error leyendo stream:`, err); fileError = err; writeStream.end(); reject(err); });
+            writeStream.on('error', (err: Error) => { functions.logger.error(`Error escribiendo archivo:`, err); fileError = err; reject(err); });
+            writeStream.on('finish', () => { functions.logger.info(`Archivo guardado.`); resolve(); });
         });
         fileWrites.push(promise);
     });
 
     bb.on('error', (err: Error) => {
-      console.error('Error general de Busboy:', err);
-      fileError = true;
+        functions.logger.error('Error general de Busboy:', err);
+        if (!fileError) fileError = err;
     });
 
-    bb.on("close", async () => { // Usar 'close'
-      console.log("Busboy 'close' event triggered.");
+    bb.on('close', async () => {
+      functions.logger.info("Busboy 'close'.");
 
-      // Manejo de errores centralizado
       if (fileError) {
-          console.log("Se detectó un error de archivo previo.");
-           if (!res.headersSent) { res.status(400).send({ error: "Error procesando el archivo. Asegúrate de que sea una imagen válida." }); }
-           // Intentar borrar archivo si existe
-           if (imageFilePath && fs.existsSync(imageFilePath)) { try { fs.unlinkSync(imageFilePath); } catch (e) { console.error("Error borrando archivo tras error:", e);} }
+          functions.logger.error("Error detectado:", fileError.message);
+           if (imageFilePath && fs.existsSync(imageFilePath)) { try { fs.unlinkSync(imageFilePath); } catch(e){ functions.logger.error(`Error borrando archivo:`, e); } }
+           if (!res.headersSent) {
+               const msg = fileError.message.includes('imágenes') ? 'Tipo inválido.' : 'Error procesando archivo.';
+               res.status(400).send({ error: msg });
+           }
            return;
       }
+
       if (!fileDetected) {
-          console.error("No se envió ningún archivo.");
-          if (!res.headersSent) { res.status(400).send({ error: "No se encontró ningún archivo en la petición." }); }
-          return;
+        functions.logger.error("No se detectó archivo 'file'.");
+        if (!res.headersSent) { res.status(400).send({ error: "No se envió imagen válida." }); }
+        return;
       }
 
-      // Procesamiento principal si no hubo errores
       try {
         await Promise.all(fileWrites);
-        console.log("Archivos escritos. Procesando:", imageFilePath);
+        functions.logger.info(`Procesando: ${imageFilePath}`);
 
-        if (!imageFilePath || !fs.existsSync(imageFilePath)) {
-             console.error("El archivo de imagen temporal no existe después de escribir.");
-             throw new Error("Error interno guardando la imagen.");
-        }
+        if (!fs.existsSync(imageFilePath)) { throw new Error("Archivo temporal no existe."); }
 
-        // Inicialización "Perezosa" del cliente de Vision
-        console.log("Inicializando Vision Client...");
-        const visionClientLocal = new vision.ImageAnnotatorClient(); // Crear instancia aquí
-
-        console.log("Llamando a Vision API...");
-        const [result] = await visionClientLocal.textDetection(imageFilePath); // Usar la instancia local
-        console.log("Respuesta de Vision API recibida.");
+        functions.logger.info("Iniciando Vision Client...");
+        const visionClientLocal = new vision.ImageAnnotatorClient();
+        const [result] = await visionClientLocal.textDetection(imageFilePath);
+        functions.logger.info("Respuesta Vision OK.");
         const detections = result.textAnnotations;
 
-        // Limpieza temprana
-        try { fs.unlinkSync(imageFilePath); console.log("Archivo temporal borrado.");}
-        catch (e) { console.error("Error borrando archivo temporal (post-vision):", e);}
+        try { fs.unlinkSync(imageFilePath); functions.logger.info(`Archivo borrado.`);}
+        catch (e) { functions.logger.error(`Error borrando archivo:`, e);}
 
-        if (!detections || detections.length === 0 || !detections[0]?.description) {
-          console.log("No se detectó texto útil.");
-           if (!res.headersSent) res.status(400).send({ error: "No se pudo leer texto en la imagen." });
-          return;
-        }
+        let items: { description: string; amount: number }[] = [];
+        if (detections && detections.length > 0 && detections[0]?.description) {
+           const fullText = detections[0].description;
+           functions.logger.info("Texto detectado:\n---\n", fullText, "\n---");
 
-        const fullText = detections[0].description;
-        console.log("Texto completo detectado:\n---\n", fullText, "\n---");
+           const lines = fullText.split("\n");
 
-        // --- PARSEO BÁSICO ---
-        const lines = fullText.split("\n");
-        const items: { description: string; amount: number }[] = [];
-        const priceRegex = /(?:[\s$]|^)(\d+[,.]\d{1,2})\s*$/;
-        const ignoreRegex = /^(total|subtotal|iva|propina|efectivo|cambio|impuesto|recibido|tarjeta|gracias|vuelto|cajero|atendido por)/i;
+           // --- LÓGICA DE PARSEO MEJORADA ---
+           
+           // 1. Regex para precios: Busca números al final de la línea (ej: 12.50, 15, $20.00)
+           const priceRegex = /(?:[\s$]|^)(\d+(?:[,.]\d{1,2})?)\s*$/;
+           
+           // 2. Regex para ignorar líneas que NO son productos (encabezados, totales, info del ticket)
+           // Se agregó 'descripcion', 'cant', 'precio', 'ventas', 'gravadas' para evitar leer los encabezados
+           const ignoreRegex = /^(total|subtotal|iva|propina|efectivo|cambio|impuesto|recibido|tarjeta|gracias|vuelto|cajero|atendido|fecha|hora|ticket|factura|descripcion|descrip|cant|precio|ventas|gravadas|exentas|p\.unit)/i;
+           
+           // 3. Regex para detectar y limpiar cantidades al inicio (ej: "1 ACEITE" -> "ACEITE")
+           // Busca 1 a 3 dígitos al inicio seguidos de un espacio
+           const quantityRegex = /^(\d{1,3})\s+/;
 
-        console.log("Parseando líneas...");
-        for (const line of lines) {
-          const trimmedLine = line.trim();
-          if (trimmedLine.length < 3 || ignoreRegex.test(trimmedLine)) continue;
-          const match = trimmedLine.match(priceRegex);
-          if (match && match[1]) {
-            let priceStr = match[1].trim().replace(/,/g, ".");
-            const amount = parseFloat(priceStr);
-            if (!isNaN(amount) && amount > 0) {
-              let description = trimmedLine.substring(0, match.index).trim();
-              description = description.replace(/^[^a-zA-Z0-9\u00E0-\u00FC]+|[^a-zA-Z0-9\u00E0-\u00FC\s]+$/g, "").trim();
-              if (description.length > 1 && !ignoreRegex.test(description)) {
-                console.log(`Item encontrado: [Desc: "${description}", Monto: ${amount}]`);
-                items.push({ description, amount });
+           functions.logger.info("Parseando líneas...");
+           for (const line of lines) {
+              const trimmedLine = line.trim();
+              
+              // Filtro 1: Ignorar líneas muy cortas o palabras clave prohibidas
+              if (trimmedLine.length < 3 || ignoreRegex.test(trimmedLine)) continue;
+
+              const match = trimmedLine.match(priceRegex);
+
+              if (match && match[1]) {
+                 try {
+                    let priceStr = match[1].trim().replace(/,/g, ".");
+                    const amount = parseFloat(priceStr);
+
+                    if (!isNaN(amount) && amount > 0) {
+                        // Extraer la descripción (todo lo que está antes del precio)
+                        let description = trimmedLine.substring(0, match.index).trim();
+                        
+                        // Limpieza de símbolos raros al inicio/fin
+                        description = description.replace(/^[^a-zA-Z0-9\u00E0-\u00FC]+|[^a-zA-Z0-9\u00E0-\u00FC\s]+$/g, "").trim();
+
+                        // Filtro 2: Limpiar Cantidad ("1 ACEITE" -> "ACEITE")
+                        // Si la descripción empieza con un número y espacio, lo quitamos
+                        description = description.replace(quantityRegex, "");
+
+                        // Filtro 3: Verificar que quede descripción válida después de limpiar
+                        if (description.length > 1 && !ignoreRegex.test(description)) {
+                           functions.logger.info(`Item OK: [Desc: "${description}", Monto: ${amount}]`);
+                           items.push({ description, amount });
+                        }
+                    }
+                 } catch (parseError) {
+                     functions.logger.error(`Error parseando:`, parseError);
+                 }
               }
-            }
-          }
+           }
+           // --- FIN LÓGICA MEJORADA ---
+        } else {
+          functions.logger.warn("No se detectó texto útil.");
         }
 
-        console.log("Items parseados final:", items);
-        if (!res.headersSent) res.status(200).send({ items });
+        functions.logger.info("Items finales:", items);
+        if (!res.headersSent) {
+             res.status(200).send({ items: items.length > 0 ? items : [], message: items.length === 0 ? 'No se encontraron gastos.' : undefined });
+        }
 
       } catch (error) {
-        console.error("Error en bloque 'close' (API call o parseo):", error);
-        if (imageFilePath && fs.existsSync(imageFilePath)) { try { fs.unlinkSync(imageFilePath); } catch (e) { console.error("Error borrando archivo temporal tras error:", e);} }
-        if (!res.headersSent) res.status(500).send({ error: "Error interno procesando la imagen." });
+        functions.logger.error("Error OCR/Parseo:", error);
+        if (imageFilePath && fs.existsSync(imageFilePath)) { try { fs.unlinkSync(imageFilePath); } catch(e){ functions.logger.error(`Error borrando:`, e); } }
+        if (!res.headersSent) { res.status(500).send({ error: 'Error interno procesando imagen.' }); }
       }
-    }); // Fin bb.on('close')
+    });
 
-     req.pipe(bb); // Inicia el procesamiento
+    if ((req as any).rawBody) {
+      bb.end((req as any).rawBody);
+    } else {
+      req.pipe(bb);
+    }
 
-  }); // Fin corsHandler
-}); // Fin https.onRequest
+  });
+});

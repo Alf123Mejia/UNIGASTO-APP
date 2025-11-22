@@ -1,4 +1,3 @@
-// functions/tsconfig.json
 {
   "compilerOptions": {
     "module": "commonjs",
@@ -8,9 +7,9 @@
     "sourceMap": true,
     "strict": true,
     "target": "es2017",
-    "esModuleInterop": true, // <--- ¡ESTA ES LA LÍNEA CLAVE!
-    "skipLibCheck": true,     // <-- Añadir esta puede ayudar a veces
-    "forceConsistentCasingInFileNames": true // <-- Añadir esta puede ayudar a veces
+    "esModuleInterop": true,  // <--- ESTO ES CLAVE
+    "skipLibCheck": true,     // <--- ESTO EVITA ERRORES DE LIBRERÍAS EXTERNAS
+    "forceConsistentCasingInFileNames": true
   },
   "compileOnSave": true,
   "include": [
