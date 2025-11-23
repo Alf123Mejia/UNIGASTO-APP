@@ -237,3 +237,23 @@ form {
       margin-left: auto;
   }
 }
+
+// ESTILO PARA EL CAMPO DE NOTA
+.note-group {
+  width: 100%;
+  margin-bottom: 5px; // Separación con la fila de abajo
+
+  input {
+    font-size: 13px;       // Letra más pequeña
+    color: #666;           // Color grisáceo
+    font-style: italic;    // Cursiva para indicar que es opcional/secundario
+    padding: 8px 12px;     // Un poco más compacto
+    background-color: #fcfcfc; 
+    border: 1px solid #eee;
+    
+    &:focus {
+      background-color: #fff;
+      border-color: $color-primary;
+    }
+  }
+}

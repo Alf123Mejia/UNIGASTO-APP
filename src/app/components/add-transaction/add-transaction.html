@@ -10,9 +10,14 @@
       <input type="number" id="amount" name="amount" [(ngModel)]="amount" required>
     </div>
 
+<div class="input-group">
+      <label for="description">Descripción (Lugar o Producto)</label>
+      <input type="text" id="description" name="description" [(ngModel)]="description" (ngModelChange)="onDescriptionChange($event)" required placeholder="Ej: Burger King">
+    </div>
+
     <div class="input-group">
-      <label for="description">Descripción</label>
-      <input type="text" id="description" name="description" [(ngModel)]="description" (ngModelChange)="onDescriptionChange($event)" required>
+      <label for="note">Nota / Detalle (Opcional)</label>
+      <input type="text" id="note" name="note" [(ngModel)]="note" placeholder="Ej: Combo Whopper">
     </div>
 
     <div class="input-group">

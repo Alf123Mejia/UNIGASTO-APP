@@ -22,10 +22,15 @@
           <div class="icon" [style.background-color]="transaction.iconColor">
             <i [class]="transaction.icon"></i>
           </div>
+
           <div class="details">
             <p class="description">{{ transaction.description }}</p>
+            <p class="note" *ngIf="transaction.note" style="font-size: 11px; color: #666; font-style: italic;">
+              {{ transaction.note }}
+            </p>
             <p class="date">{{ transaction.date | date:'short' }}</p>
           </div>
+
         </div>
         <div class="right">
           <span class="amount" [class]="getAmountClass(transaction.amount)">

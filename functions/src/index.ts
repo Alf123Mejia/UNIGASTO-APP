@@ -38,18 +38,14 @@ export const processReceipt = functions.https.onRequest((req, res) => {
 
     bb.on('file', (fieldname: string, file: stream.Readable, info: busboy.FileInfo) => {
         if (fileError) { file.resume(); return; }
-
         fileDetected = true;
         const { filename = 'unknownfile', mimeType } = info;
-        functions.logger.info(`Archivo recibido: fieldname=${fieldname}, filename=${filename}, mimeType=${mimeType}`);
 
         if (fieldname !== 'file') {
-            functions.logger.warn(`Campo de archivo ignorado: ${fieldname}`);
             file.resume();
             return;
         }
         if (!mimeType.startsWith('image/')) {
-          functions.logger.error(`Tipo no soportado: ${mimeType}`);
           fileError = new Error('Solo se permiten imágenes.');
           file.resume();
           return;
@@ -58,30 +54,25 @@ export const processReceipt = functions.https.onRequest((req, res) => {
         const uniqueFilename = `${Date.now()}-${path.basename(filename)}`;
         const filepath = path.join(tmpdir, uniqueFilename);
         imageFilePath = filepath;
-        functions.logger.info(`Guardando en: ${filepath}`);
 
         const writeStream = fs.createWriteStream(filepath);
         file.pipe(writeStream);
 
         const promise = new Promise<void>((resolve, reject) => {
-            file.on('error', (err: Error) => { functions.logger.error(`Error leyendo stream:`, err); fileError = err; writeStream.end(); reject(err); });
-            writeStream.on('error', (err: Error) => { functions.logger.error(`Error escribiendo archivo:`, err); fileError = err; reject(err); });
-            writeStream.on('finish', () => { functions.logger.info(`Archivo guardado.`); resolve(); });
+            file.on('error', (err: Error) => { fileError = err; writeStream.end(); reject(err); });
+            writeStream.on('error', (err: Error) => { fileError = err; reject(err); });
+            writeStream.on('finish', () => { resolve(); });
         });
         fileWrites.push(promise);
     });
 
     bb.on('error', (err: Error) => {
-        functions.logger.error('Error general de Busboy:', err);
         if (!fileError) fileError = err;
     });
 
     bb.on('close', async () => {
-      functions.logger.info("Busboy 'close'.");
-
       if (fileError) {
-          functions.logger.error("Error detectado:", fileError.message);
-           if (imageFilePath && fs.existsSync(imageFilePath)) { try { fs.unlinkSync(imageFilePath); } catch(e){ functions.logger.error(`Error borrando archivo:`, e); } }
+           if (imageFilePath && fs.existsSync(imageFilePath)) { try { fs.unlinkSync(imageFilePath); } catch(e){} }
            if (!res.headersSent) {
                const msg = fileError.message.includes('imágenes') ? 'Tipo inválido.' : 'Error procesando archivo.';
                res.status(400).send({ error: msg });
@@ -90,96 +81,135 @@ export const processReceipt = functions.https.onRequest((req, res) => {
       }
 
       if (!fileDetected) {
-        functions.logger.error("No se detectó archivo 'file'.");
         if (!res.headersSent) { res.status(400).send({ error: "No se envió imagen válida." }); }
         return;
       }
 
       try {
         await Promise.all(fileWrites);
-        functions.logger.info(`Procesando: ${imageFilePath}`);
-
         if (!fs.existsSync(imageFilePath)) { throw new Error("Archivo temporal no existe."); }
 
-        functions.logger.info("Iniciando Vision Client...");
         const visionClientLocal = new vision.ImageAnnotatorClient();
         const [result] = await visionClientLocal.textDetection(imageFilePath);
-        functions.logger.info("Respuesta Vision OK.");
         const detections = result.textAnnotations;
 
-        try { fs.unlinkSync(imageFilePath); functions.logger.info(`Archivo borrado.`);}
-        catch (e) { functions.logger.error(`Error borrando archivo:`, e);}
+        try { fs.unlinkSync(imageFilePath); } catch (e) {}
 
-        let items: { description: string; amount: number }[] = [];
+        let finalResponseItems: { description: string; amount: number; note?: string }[] = [];
+        
         if (detections && detections.length > 0 && detections[0]?.description) {
            const fullText = detections[0].description;
-           functions.logger.info("Texto detectado:\n---\n", fullText, "\n---");
-
+           functions.logger.info("Texto completo:\n", fullText);
            const lines = fullText.split("\n");
 
-           // --- LÓGICA DE PARSEO MEJORADA ---
-           
-           // 1. Regex para precios: Busca números al final de la línea (ej: 12.50, 15, $20.00)
-           const priceRegex = /(?:[\s$]|^)(\d+(?:[,.]\d{1,2})?)\s*$/;
-           
-           // 2. Regex para ignorar líneas que NO son productos (encabezados, totales, info del ticket)
-           // Se agregó 'descripcion', 'cant', 'precio', 'ventas', 'gravadas' para evitar leer los encabezados
-           const ignoreRegex = /^(total|subtotal|iva|propina|efectivo|cambio|impuesto|recibido|tarjeta|gracias|vuelto|cajero|atendido|fecha|hora|ticket|factura|descripcion|descrip|cant|precio|ventas|gravadas|exentas|p\.unit)/i;
-           
-           // 3. Regex para detectar y limpiar cantidades al inicio (ej: "1 ACEITE" -> "ACEITE")
-           // Busca 1 a 3 dígitos al inicio seguidos de un espacio
-           const quantityRegex = /^(\d{1,3})\s+/;
+           // 1. COMERCIOS Y PALABRAS CLAVE ASOCIADAS
+           // Aquí definimos qué palabras "delatan" a un comercio
+           const merchants = [
+               { name: 'McDonald\'s', keywords: ['mcdonald', 'arcos dorados', 'cajita feliz', 'big mac', 'mcmuffin', 'mcflurry'] },
+               { name: 'Pizza Hut', keywords: ['pizza hut', 'pan pizza', 'hut cheese'] },
+               { name: 'Starbucks', keywords: ['starbucks', 'mango dragonfruit lemonade refresher'] },
+               { name: 'Wendy\'s', keywords: ['wendy', 'baconator'] },
+               { name: 'Burger King', keywords: ['burger king', 'whopper'] },
+               { name: 'KFC', keywords: ['kfc', 'kentucky', 'big kruncher'] },
+               { name: 'Pollo Campero', keywords: ['campero', 'pollo tierno', 'camperitos'] },
+               { name: 'China Wok', keywords: ['china wok', 'arroz cantones', 'wantan'] }
+           ];
 
-           functions.logger.info("Parseando líneas...");
-           for (const line of lines) {
-              const trimmedLine = line.trim();
-              
-              // Filtro 1: Ignorar líneas muy cortas o palabras clave prohibidas
-              if (trimmedLine.length < 3 || ignoreRegex.test(trimmedLine)) continue;
+           let detectedMerchant = null;
+           const lowerFullText = fullText.toLowerCase();
 
-              const match = trimmedLine.match(priceRegex);
-
-              if (match && match[1]) {
-                 try {
-                    let priceStr = match[1].trim().replace(/,/g, ".");
-                    const amount = parseFloat(priceStr);
-
-                    if (!isNaN(amount) && amount > 0) {
-                        // Extraer la descripción (todo lo que está antes del precio)
-                        let description = trimmedLine.substring(0, match.index).trim();
-                        
-                        // Limpieza de símbolos raros al inicio/fin
-                        description = description.replace(/^[^a-zA-Z0-9\u00E0-\u00FC]+|[^a-zA-Z0-9\u00E0-\u00FC\s]+$/g, "").trim();
-
-                        // Filtro 2: Limpiar Cantidad ("1 ACEITE" -> "ACEITE")
-                        // Si la descripción empieza con un número y espacio, lo quitamos
-                        description = description.replace(quantityRegex, "");
-
-                        // Filtro 3: Verificar que quede descripción válida después de limpiar
-                        if (description.length > 1 && !ignoreRegex.test(description)) {
-                           functions.logger.info(`Item OK: [Desc: "${description}", Monto: ${amount}]`);
-                           items.push({ description, amount });
-                        }
-                    }
-                 } catch (parseError) {
-                     functions.logger.error(`Error parseando:`, parseError);
-                 }
-              }
+           // Buscar si alguna palabra clave está en todo el texto
+           for (const m of merchants) {
+               if (m.keywords.some(k => lowerFullText.includes(k))) {
+                   detectedMerchant = m.name;
+                   break;
+               }
            }
-           // --- FIN LÓGICA MEJORADA ---
+
+           // --- PRE-PROCESAMIENTO DE ÍTEMS ---
+           // Primero extraemos todo lo que parezca un producto y su precio
+           const tempItems: { description: string; amount: number }[] = [];
+           const priceRegex = /(?:[\s$]|^)(\d+(?:[,.]\d{1,2})?)\s*$/;
+           const ignoreRegex = /^(total|subtotal|iva|propina|efectivo|cambio|impuesto|recibido|tarjeta|gracias|vuelto|cajero|atendido|fecha|hora|ticket|factura|nit|nrc)/i;
+           const qtyRegex = /^(\d{1,3})\s+(?=[a-zA-Z])/; // Para quitar "1 CAJITA"
+
+           for (const line of lines) {
+               const trimmedLine = line.trim();
+               if (trimmedLine.length < 3 || ignoreRegex.test(trimmedLine)) continue;
+
+               const match = trimmedLine.match(priceRegex);
+               if (match && match[1]) {
+                   try {
+                       let priceStr = match[1].replace(/,/g, ".");
+                       const amount = parseFloat(priceStr);
+
+                       if (!isNaN(amount) && amount > 0) {
+                           let description = trimmedLine.substring(0, match.index).trim();
+                           // Limpieza
+                           description = description.replace(/^[^a-zA-Z0-9\u00E0-\u00FC]+|[^a-zA-Z0-9\u00E0-\u00FC\s%]+$/g, "").trim();
+                           description = description.replace(qtyRegex, "").trim(); // Quitar "1 " del inicio
+
+                           if (description.length > 1 && !ignoreRegex.test(description)) {
+                               tempItems.push({ description, amount });
+                           }
+                       }
+                   } catch (e) {}
+               }
+           }
+
+           if (detectedMerchant) {
+               // --- ESTRATEGIA 1: COMERCIO DETECTADO (Lógica de Consumo) ---
+               functions.logger.info(`Comercio detectado: ${detectedMerchant}`);
+
+               // 1. Calcular el Total: Buscamos el valor monetario más alto encontrado en el texto
+               // (Asumimos que en un ticket de comida, el número más grande suele ser el total)
+               let totalAmount = 0;
+               const allAmounts = tempItems.map(i => i.amount);
+               // También buscamos números sueltos que podrían ser el total y no se parsearon como items
+               const allNumbersRegex = /(\d+(?:[,.]\d{2}))/g;
+               const numbersMatch = fullText.match(allNumbersRegex);
+               if (numbersMatch) {
+                   numbersMatch.forEach(numStr => {
+                       const val = parseFloat(numStr.replace(',', '.'));
+                       if (!isNaN(val)) allAmounts.push(val);
+                   });
+               }
+               
+               if (allAmounts.length > 0) {
+                   totalAmount = Math.max(...allAmounts);
+               }
+
+               // 2. Construir la Nota: Unimos los nombres de los productos encontrados
+               const noteDetails = tempItems
+                   .map(i => i.description)
+                   .join(", ");
+
+               if (totalAmount > 0) {
+                   finalResponseItems.push({
+                       description: detectedMerchant, // El nombre es el comercio (ej. McDonald's)
+                       amount: totalAmount,           // El monto es el total (el valor más grande)
+                       note: noteDetails              // La nota es el desglose (ej. Cajita Feliz, Papas)
+                   });
+               }
+
+           } else {
+               // --- ESTRATEGIA 2: COMERCIO NO DETECTADO (Lógica de Inventario) ---
+               // Devolvemos la lista detallada de productos tal cual (ej. Supermercado)
+               finalResponseItems = tempItems;
+           }
+
         } else {
           functions.logger.warn("No se detectó texto útil.");
         }
 
-        functions.logger.info("Items finales:", items);
         if (!res.headersSent) {
-             res.status(200).send({ items: items.length > 0 ? items : [], message: items.length === 0 ? 'No se encontraron gastos.' : undefined });
+             res.status(200).send({ items: finalResponseItems.length > 0 ? finalResponseItems : [], message: finalResponseItems.length === 0 ? 'No se encontraron gastos.' : undefined });
         }
 
       } catch (error) {
-        functions.logger.error("Error OCR/Parseo:", error);
-        if (imageFilePath && fs.existsSync(imageFilePath)) { try { fs.unlinkSync(imageFilePath); } catch(e){ functions.logger.error(`Error borrando:`, e); } }
-        if (!res.headersSent) { res.status(500).send({ error: 'Error interno procesando imagen.' }); }
+        functions.logger.error("Error:", error);
+        if (imageFilePath && fs.existsSync(imageFilePath)) { try { fs.unlinkSync(imageFilePath); } catch(e){} }
+        if (!res.headersSent) { res.status(500).send({ error: 'Error interno.' }); }
       }
     });
 
@@ -188,6 +218,5 @@ export const processReceipt = functions.https.onRequest((req, res) => {
     } else {
       req.pipe(bb);
     }
-
   });
 });

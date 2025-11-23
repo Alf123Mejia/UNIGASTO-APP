@@ -15,6 +15,7 @@ import { FinancialService } from '../../services/financial';
 export class AddTransaction {
   private financialService = inject(FinancialService);
   private router = inject(Router);
+  note: string = ''; // NUEVA VARIABLE
 
   // Variables para el formulario
   amount: number | null = null;
@@ -59,6 +60,7 @@ onDescriptionChange(description: string): void {
       // Llamamos al método `addTransaction` del servicio con el formato correcto
       this.financialService.addTransaction({
         description: this.description,
+        note: this.note,
         date: new Date().toISOString(),
         amount: finalAmount,
         category: this.category,

@@ -11,6 +11,7 @@ export interface Category {
 export interface Transaction {
   id: number;
   description: string;
+  note?: string;
   date: string; // ISO String format
   amount: number;
   category: string;
