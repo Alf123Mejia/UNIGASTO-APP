@@ -1,10 +1,7 @@
 // functions/src/index.ts
 
 import * as functions from "firebase-functions";
-// Usa require para cors
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const cors = require("cors")({ origin: true });
-// Usa import = require() para busboy
 import busboy = require('busboy');
 import * as os from "os";
 import * as path from "path";
@@ -15,7 +12,6 @@ import vision from "@google-cloud/vision";
 export const processReceipt = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
     if (req.method !== 'POST') {
-      functions.logger.warn("Método no permitido:", req.method);
       res.set('Allow', 'POST');
       res.status(405).send({ error: 'Method Not Allowed' });
       return;
@@ -59,8 +55,8 @@ export const processReceipt = functions.https.onRequest((req, res) => {
         file.pipe(writeStream);
 
         const promise = new Promise<void>((resolve, reject) => {
-            file.on('error', (err: Error) => { fileError = err; writeStream.end(); reject(err); });
-            writeStream.on('error', (err: Error) => { fileError = err; reject(err); });
+            file.on('error', (err) => { fileError = err; writeStream.end(); reject(err); });
+            writeStream.on('error', (err) => { fileError = err; reject(err); });
             writeStream.on('finish', () => { resolve(); });
         });
         fileWrites.push(promise);
@@ -101,24 +97,32 @@ export const processReceipt = functions.https.onRequest((req, res) => {
            const fullText = detections[0].description;
            functions.logger.info("Texto completo:\n", fullText);
            const lines = fullText.split("\n");
+           const lowerFullText = fullText.toLowerCase();
 
-           // 1. COMERCIOS Y PALABRAS CLAVE ASOCIADAS
-           // Aquí definimos qué palabras "delatan" a un comercio
+           // --- 1. DETECCIÓN DE TIPO DE DOCUMENTO (Factura vs Lista) ---
+           // Si tiene estas palabras, asumimos que es un ticket oficial con el total ya calculado
+           const receiptIndicators = ['total', 'subtotal', 'efectivo', 'cambio', 'ticket', 'factura', 'cajero', 'fecha:', 'nit:', 'nrc:', 'vuelto'];
+           const isOfficialReceipt = receiptIndicators.some(indicator => lowerFullText.includes(indicator));
+
+           functions.logger.info(`Es Ticket Oficial: ${isOfficialReceipt}`);
+
+           // --- 2. LISTA DE COMERCIOS ---
            const merchants = [
-               { name: 'McDonald\'s', keywords: ['mcdonald', 'arcos dorados', 'cajita feliz', 'big mac', 'mcmuffin', 'mcflurry'] },
-               { name: 'Pizza Hut', keywords: ['pizza hut', 'pan pizza', 'hut cheese'] },
-               { name: 'Starbucks', keywords: ['starbucks', 'mango dragonfruit lemonade refresher'] },
-               { name: 'Wendy\'s', keywords: ['wendy', 'baconator'] },
-               { name: 'Burger King', keywords: ['burger king', 'whopper'] },
-               { name: 'KFC', keywords: ['kfc', 'kentucky', 'big kruncher'] },
-               { name: 'Pollo Campero', keywords: ['campero', 'pollo tierno', 'camperitos'] },
-               { name: 'China Wok', keywords: ['china wok', 'arroz cantones', 'wantan'] }
+               { name: 'McDonald\'s', keywords: ['mcdonald', 'arcos dorados', 'cajita feliz', 'big mac', 'mcmuffin', 'mcflurry', 'mcmenu', 'quesohamburguesa', 'mcnuggets', 'cuarto de libra', 'mcpollo', 'mac', 'mccombo', 'deluxe'] },
+               { name: 'Pizza Hut', keywords: ['pizza hut', 'pan pizza', 'hut cheese', 'super suprema', 'pepperoni', 'jamon y queso', 'palitroques', 'lasaña', 'calzone', 'hut', 'pizzahut', '4 estaciones'] },
+               { name: 'Starbucks', keywords: ['starbucks', 'frappuccino', 'latte', 'espresso', 'macchiato', 'venti', 'grande', 'alto', 'mocha', 'coffee', 'café', 'refresher', 'panini', 'croissant'] },
+               { name: 'Wendy\'s', keywords: ['wendy', 'baconator', 'dave', 'frosty', 'chili', 'papas con queso', 'hamburguesa'] },
+               { name: 'Burger King', keywords: ['burger king', 'whopper', 'king de pollo', 'stacker', 'long chicken', 'onion rings', 'bk', 'king'] },
+               { name: 'KFC', keywords: ['kfc', 'kentucky', 'receta original', 'crispy', 'bucket', 'ke-tiras', 'pure de papa', 'big kruncher', 'popcorn', 'biscuit'] },
+               { name: 'Pollo Campero', keywords: ['campero', 'pollo tierno', 'camperitos', 'extra crujiente', 'pan campero', 'desayuno campero'] },
+               { name: 'China Wok', keywords: ['china wok', 'arroz cantones', 'wantan', 'chao mein', 'agridulce', 'enrollado', 'cerdo', 'pollo naranja'] },
+               { name: 'Little Caesars', keywords: ['little caesar', 'hot n ready', 'pizza de queso', 'crazy bread', 'caesar', 'super cheese'] },
+               { name: 'Taco Bell', keywords: ['taco bell', 'chalupa', 'burrito', 'crunchwrap', 'bell', 'taco', 'quesadilla'] },
+               { name: 'Papa John\'s', keywords: ['papa john', 'johns', 'the works', 'tuscan six cheese', 'papa'] },
+               { name: 'Subway', keywords: ['subway', 'bmt', 'sub del dia', 'teriyaki', 'steak', 'tuna', 'deatun', 'sub'] }
            ];
 
            let detectedMerchant = null;
-           const lowerFullText = fullText.toLowerCase();
-
-           // Buscar si alguna palabra clave está en todo el texto
            for (const m of merchants) {
                if (m.keywords.some(k => lowerFullText.includes(k))) {
                    detectedMerchant = m.name;
@@ -126,12 +130,11 @@ export const processReceipt = functions.https.onRequest((req, res) => {
                }
            }
 
-           // --- PRE-PROCESAMIENTO DE ÍTEMS ---
-           // Primero extraemos todo lo que parezca un producto y su precio
+           // --- 3. PRE-PROCESAMIENTO DE ÍTEMS ---
            const tempItems: { description: string; amount: number }[] = [];
            const priceRegex = /(?:[\s$]|^)(\d+(?:[,.]\d{1,2})?)\s*$/;
            const ignoreRegex = /^(total|subtotal|iva|propina|efectivo|cambio|impuesto|recibido|tarjeta|gracias|vuelto|cajero|atendido|fecha|hora|ticket|factura|nit|nrc)/i;
-           const qtyRegex = /^(\d{1,3})\s+(?=[a-zA-Z])/; // Para quitar "1 CAJITA"
+           const qtyRegex = /^(\d{1,3})\s+(?=[a-zA-Z])/; 
 
            for (const line of lines) {
                const trimmedLine = line.trim();
@@ -145,9 +148,8 @@ export const processReceipt = functions.https.onRequest((req, res) => {
 
                        if (!isNaN(amount) && amount > 0) {
                            let description = trimmedLine.substring(0, match.index).trim();
-                           // Limpieza
                            description = description.replace(/^[^a-zA-Z0-9\u00E0-\u00FC]+|[^a-zA-Z0-9\u00E0-\u00FC\s%]+$/g, "").trim();
-                           description = description.replace(qtyRegex, "").trim(); // Quitar "1 " del inicio
+                           description = description.replace(qtyRegex, "").trim();
 
                            if (description.length > 1 && !ignoreRegex.test(description)) {
                                tempItems.push({ description, amount });
@@ -158,43 +160,51 @@ export const processReceipt = functions.https.onRequest((req, res) => {
            }
 
            if (detectedMerchant) {
-               // --- ESTRATEGIA 1: COMERCIO DETECTADO (Lógica de Consumo) ---
+               // --- ESTRATEGIA COMERCIO DETECTADO ---
                functions.logger.info(`Comercio detectado: ${detectedMerchant}`);
 
-               // 1. Calcular el Total: Buscamos el valor monetario más alto encontrado en el texto
-               // (Asumimos que en un ticket de comida, el número más grande suele ser el total)
                let totalAmount = 0;
-               const allAmounts = tempItems.map(i => i.amount);
-               // También buscamos números sueltos que podrían ser el total y no se parsearon como items
-               const allNumbersRegex = /(\d+(?:[,.]\d{2}))/g;
-               const numbersMatch = fullText.match(allNumbersRegex);
-               if (numbersMatch) {
-                   numbersMatch.forEach(numStr => {
-                       const val = parseFloat(numStr.replace(',', '.'));
-                       if (!isNaN(val)) allAmounts.push(val);
-                   });
-               }
-               
-               if (allAmounts.length > 0) {
-                   totalAmount = Math.max(...allAmounts);
+
+               if (isOfficialReceipt) {
+                   // ==> ES UN TICKET OFICIAL: Buscamos el NÚMERO MÁS GRANDE (Total)
+                   const allAmounts = tempItems.map(i => i.amount);
+                   // También buscamos números sueltos que podrían ser el total
+                   const allNumbersRegex = /(\d+(?:[,.]\d{2}))/g;
+                   const numbersMatch = fullText.match(allNumbersRegex);
+                   if (numbersMatch) {
+                       numbersMatch.forEach(numStr => {
+                           const val = parseFloat(numStr.replace(',', '.'));
+                           if (!isNaN(val) && val < 5000) allAmounts.push(val);
+                       });
+                   }
+                   if (allAmounts.length > 0) {
+                       totalAmount = Math.max(...allAmounts);
+                   }
+               } else {
+                   // ==> ES UNA LISTA SIMPLE: SUMAMOS TODO
+                   // Sumamos los montos de los items encontrados
+                   totalAmount = tempItems.reduce((sum, item) => sum + item.amount, 0);
                }
 
-               // 2. Construir la Nota: Unimos los nombres de los productos encontrados
+               // Construir Nota
                const noteDetails = tempItems
-                   .map(i => i.description)
+                   .map(i => {
+                        const merchantRegex = new RegExp(detectedMerchant!.replace(/'/g, ".?"), "gi");
+                        let cleaned = i.description.replace(merchantRegex, '').trim();
+                        return cleaned.length > 1 ? cleaned : i.description;
+                   })
                    .join(", ");
 
                if (totalAmount > 0) {
                    finalResponseItems.push({
-                       description: detectedMerchant, // El nombre es el comercio (ej. McDonald's)
-                       amount: totalAmount,           // El monto es el total (el valor más grande)
-                       note: noteDetails              // La nota es el desglose (ej. Cajita Feliz, Papas)
+                       description: detectedMerchant, 
+                       amount: Number(totalAmount.toFixed(2)), // Redondear a 2 decimales         
+                       note: noteDetails              
                    });
                }
 
            } else {
-               // --- ESTRATEGIA 2: COMERCIO NO DETECTADO (Lógica de Inventario) ---
-               // Devolvemos la lista detallada de productos tal cual (ej. Supermercado)
+               // --- ESTRATEGIA SIN COMERCIO (Lista Genérica) ---
                finalResponseItems = tempItems;
            }
 

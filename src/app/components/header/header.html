@@ -1,12 +1,14 @@
 <div class="header">
-  <div class="greeting">
-    <h1>Hola, Williams Garcia</h1>
-    <p>Bienvenido A UniGasto</p>
+  <div class="user-info">
+    <h1>Hola, {{ financialService.userName() }}</h1>
+    <p>Bienvenido a UniGasto</p>
   </div>
-  <a routerLink="/notifications" class="notification-icon-container">
-    <i class="fas fa-bell notification-icon" [ngClass]="{'has-notifications': unreadNotifications() > 0}"></i>
-    <span class="notification-badge" *ngIf="unreadNotifications() > 0">
-      {{ unreadNotifications() }}
-    </span>
-  </a>
+  <div class="actions">
+    <a routerLink="/notifications" class="icon-btn">
+        <i class="fas fa-bell"></i>
+        <span class="badge" *ngIf="financialService.getUnreadNotificationsCount() > 0">
+            {{ financialService.getUnreadNotificationsCount() }}
+        </span>
+    </a>
+  </div>
 </div>

@@ -1,20 +1,50 @@
-<div class="analysis-container">
-    <div class="analysis-header">
-        <a routerLink="/" class="back-button"><i class="fas fa-arrow-left"></i></a>
-        <h1>Análisis</h1>
+<div class="analysis-container main-green-bg">
+  <app-header></app-header>
+
+  <div class="content-wrapper">
+    <h2>Análisis de Gastos</h2>
+    
+    <div class="chart-card" *ngIf="pieChartData().labels?.length; else noData">
+      <div class="chart-wrapper">
+        <canvas baseChart
+          [data]="pieChartData()"
+          [type]="pieChartType"
+          [options]="pieChartOptions"
+          [plugins]="pieChartPlugins">
+        </canvas>
+      </div>
+      <div class="chart-center-text">
+        <small>Total Gastado</small>
+        <span>{{ financialService.totalExpenses() | currency }}</span>
+      </div>
     </div>
 
-    <div class="time-tabs">
-        <button class="active">Semanal</button>
-        <button>Mensual</button>
-        <button>Anual</button>
-    </div>
+    <ng-template #noData>
+      <div class="empty-state">
+        <i class="fas fa-chart-pie"></i>
+        <p>Aún no hay gastos para analizar.</p>
+      </div>
+    </ng-template>
 
-    <div class="charts-section">
-        <h2>Gasto por categoría</h2>
-        <div class="chart-container">
-            <canvas baseChart [data]="pieChartData()" [options]="pieChartOptions" [type]="'pie'">
-            </canvas>
+    <div class="breakdown-section" *ngIf="topExpenses().length > 0">
+      <h3>Desglose por Categoría</h3>
+      
+      <div class="category-item" *ngFor="let item of topExpenses()">
+        <div class="cat-icon" [style.background-color]="item.color + '20'" [style.color]="item.color">
+          <i [class]="item.icon"></i>
         </div>
+        <div class="cat-info">
+          <div class="cat-header">
+            <span class="cat-name">{{ item.name }}</span>
+            <span class="cat-amount">{{ item.amount | currency }}</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" [style.width]="item.percentage + '%'" [style.background-color]="item.color"></div>
+          </div>
+          <span class="cat-percentage">{{ item.percentage | number:'1.0-1' }}%</span>
+        </div>
+      </div>
     </div>
+
+  </div>
 </div>

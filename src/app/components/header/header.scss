@@ -1,58 +1,97 @@
-/* src/app/components/header/header.component.scss */
+// src/app/components/header/header.scss
+
+// Variables de color directas para asegurar visibilidad
+$text-color: #ffffff; // Blanco para el texto
+$icon-bg: rgba(255, 255, 255, 0.25); // Fondo semitransparente para el botón
+$icon-color: #ffffff; // Icono blanco
+$badge-bg: #e74c3c; // Rojo para la notificación
 
 .header {
-  background-color: #33a34a; // Verde principal
-  color: white;
-  padding: 20px;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  border-bottom-left-radius: 20px;
-  border-bottom-right-radius: 20px;
-  position: relative;
-  z-index: 10;
+  padding: 25px 20px;
+  width: 100%;
+  box-sizing: border-box;
+  
+  // IMPORTANTE: Asegura que esté por encima de todo
+  position: relative; 
+  z-index: 100;
 
-  .greeting {
+  .user-info {
+    flex: 1;
+    margin-right: 15px;
+    
+    // Forzar color blanco y sombra suave para leerse sobre cualquier fondo verde
+    color: $text-color; 
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1); 
+
     h1 {
-      font-size: 24px;
-      margin: 0;
-      font-weight: 500;
+      font-size: 26px; // Un poco más grande
+      margin: 0 0 4px 0;
+      font-weight: 700;
+      line-height: 1.2;
+      white-space: normal; // Permitir salto de línea
     }
 
     p {
       font-size: 14px;
       margin: 0;
-      opacity: 0.8;
+      opacity: 0.9;
+      font-weight: 400;
     }
   }
 
-.notification-icon-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
+  .actions {
+    flex-shrink: 0;
+    padding-top: 5px; // Alinear visualmente con el texto
 
-    .notification-icon {
-      font-size: 24px;
-      color: white; // Color por defecto
-
-      &.has-notifications {
-        color: #fdd835; // Amarillo
-      }
-    }
-
-    .notification-badge {
-      position: absolute;
-      top: -5px;
-      right: -5px;
-      background-color: #f44336; // Rojo
-      color: white;
+    .icon-btn {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;  // Botón grande y cómodo
+      height: 48px;
+      
+      // Fondo visible: Blanco semitransparente
+      background-color: $icon-bg; 
       border-radius: 50%;
-      padding: 2px 6px;
-      font-size: 10px;
-      font-weight: bold;
+      text-decoration: none;
+      transition: background-color 0.3s, transform 0.2s;
+      border: 1px solid rgba(255,255,255,0.1); // Borde sutil
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.4);
+        transform: scale(1.05);
+      }
+
+      &:active {
+        transform: scale(0.95);
+      }
+
+      i {
+        font-size: 24px; // Icono grande
+        color: $icon-color; // Blanco puro
+      }
+
+      .badge {
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        background-color: $badge-bg;
+        color: white;
+        font-size: 11px;
+        font-weight: 700;
+        height: 20px;
+        min-width: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #2ecc71; // Borde del mismo color que el fondo principal (verde) para "recortar"
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      }
     }
   }
 }

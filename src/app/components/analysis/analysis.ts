@@ -1,84 +1,98 @@
-import { Component, inject, computed, Signal } from '@angular/core';
+// src/app/components/analysis/analysis.ts
+import { Component, inject, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { ChartOptions, ChartData, Chart } from 'chart.js';
 import { NgChartsModule } from 'ng2-charts';
+import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
+import DataLabelsPlugin from 'chartjs-plugin-datalabels';
+import { Header } from '../header/header';
 import { FinancialService } from '../../services/financial';
-
-// 1. IMPORTAMOS EL PLUGIN
-import ChartDataLabels from 'chartjs-plugin-datalabels';
-
-// 2. REGISTRAMOS EL PLUGIN
-Chart.register(ChartDataLabels);
 
 @Component({
   selector: 'app-analysis',
   standalone: true,
-  imports: [CommonModule, RouterModule, NgChartsModule],
+  imports: [CommonModule, NgChartsModule, Header],
   templateUrl: './analysis.html',
   styleUrls: ['./analysis.scss']
 })
 export class AnalysisComponent {
-  private financialService = inject(FinancialService);
-
-  public pieChartOptions: ChartOptions<'pie'> = {
+  public financialService = inject(FinancialService); // Cambiado a public para usarlo en el HTML
+  
+  // --- GRÁFICA DE PASTEL ---
+  // CORRECCIÓN: Añadimos '| any' para que TypeScript acepte 'datalabels'
+  public pieChartOptions: ChartConfiguration['options'] | any = {
     responsive: true,
+    maintainAspectRatio: false, // Importante para controlar altura
     plugins: {
       legend: {
-        position: 'bottom',
-        align: 'center',
-        labels: {
-          boxWidth: 20,
-          padding: 15,
-          font: {
-            size: 10,
-          },
-        },
+        display: true,
+        position: 'right', // Leyenda a la derecha para ahorrar espacio vertical
+        labels: { font: { size: 11 }, boxWidth: 12 }
       },
-      // 3. AÑADIMOS LA CONFIGURACIÓN PARA MOSTRAR PORCENTAJES
       datalabels: {
-        formatter: (value, ctx) => {
-          if (value === 0) {
-            return ''; // No mostrar etiqueta si el valor es 0
+        formatter: (value: any, ctx: any) => {
+          if (ctx.chart.data.labels) {
+            return ctx.chart.data.labels[ctx.dataIndex];
           }
-          const sum = (ctx.chart.data.datasets[0].data as number[]).reduce((a, b) => a + b, 0);
-          const percentage = ((value * 100) / sum).toFixed(1) + '%';
-          return percentage;
+          return '';
         },
-        color: '#fff', // Color del texto de porcentaje
-        font: {
-          weight: 'bold',
-        },
+        display: false, // Ocultar etiquetas sobre la gráfica para limpieza
       },
-    },
-    layout: {
-      padding: 10
     }
   };
-  public pieChartType = 'pie';
 
-  public pieChartData: Signal<ChartData<'pie'>> = computed(() => {
-    const labels = this.financialService.allCategories().map(cat => cat.name);
-    const colors = this.financialService.allCategories().map(cat => cat.color || '#333');
+  public pieChartType: ChartType = 'doughnut'; // Dona se ve más moderno
+  public pieChartPlugins = [DataLabelsPlugin];
 
+  // Signal para datos de la gráfica
+  pieChartData = computed(() => {
+    const transactions = this.financialService.transactions();
     const expensesByCategory: { [key: string]: number } = {};
-    this.financialService.transactions().forEach(trans => {
-      if (trans.amount < 0) {
-        const category = trans.category;
-        expensesByCategory[category] = (expensesByCategory[category] || 0) + Math.abs(trans.amount);
-      }
-    });
     
-    const dataPoints = labels.map(label => expensesByCategory[label] || 0);
+    // Agrupar gastos
+    transactions.filter(t => t.amount < 0 && t.category !== 'Ahorro').forEach(t => {
+      const amount = Math.abs(t.amount);
+      expensesByCategory[t.category] = (expensesByCategory[t.category] || 0) + amount;
+    });
+
+    // Preparar datos para Chart.js
+    const labels = Object.keys(expensesByCategory);
+    const data = Object.values(expensesByCategory);
+    const colors = labels.map(catName => {
+        const cat = this.financialService.allCategories().find(c => c.name === catName);
+        return cat ? cat.color : '#ccc';
+    });
 
     return {
       labels: labels,
-      datasets: [
-        {
-          data: dataPoints,
-          backgroundColor: colors
-        }
-      ]
+      datasets: [{ data: data, backgroundColor: colors, hoverBackgroundColor: colors, borderWidth: 0 }]
     };
+  });
+
+  // --- LISTA DE TOP GASTOS ---
+  topExpenses = computed(() => {
+      const transactions = this.financialService.transactions();
+      const expensesByCategory: { [key: string]: { amount: number, color: string, icon: string } } = {};
+      let total = 0;
+
+      transactions.filter(t => t.amount < 0 && t.category !== 'Ahorro').forEach(t => {
+          const amount = Math.abs(t.amount);
+          total += amount;
+          if (!expensesByCategory[t.category]) {
+              const cat = this.financialService.allCategories().find(c => c.name === t.category);
+              expensesByCategory[t.category] = { amount: 0, color: cat?.color || '#ccc', icon: cat?.icon || 'fas fa-tag' };
+          }
+          expensesByCategory[t.category].amount += amount;
+      });
+
+      // Convertir a array y ordenar
+      return Object.entries(expensesByCategory)
+          .map(([name, data]) => ({
+              name,
+              amount: data.amount,
+              percentage: total > 0 ? (data.amount / total) * 100 : 0,
+              color: data.color,
+              icon: data.icon
+          }))
+          .sort((a, b) => b.amount - a.amount); // Orden descendente
   });
 }

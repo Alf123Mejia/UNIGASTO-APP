@@ -38,3 +38,29 @@ app-root {
   height: 100%;
   overflow: auto; /* Permite el scroll si el contenido es más grande */
 }
+
+.main-green-bg {
+  min-height: 100vh;
+  background-color: #f5f6fa;
+  position: relative;
+  padding-bottom: 80px;
+  overflow-x: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100px;
+    background-color: #0ea74e;
+    border-bottom-left-radius: 30px;
+    border-bottom-right-radius: 30px;
+    z-index: 0;
+  }
+
+  > * {
+    position: relative;
+    z-index: 1;
+  }
+}

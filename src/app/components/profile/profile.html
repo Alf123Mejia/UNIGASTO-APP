@@ -1,16 +1,52 @@
-<div class="profile-container">
-  <div class="profile-header">
-    <a routerLink="/" class="back-button"><i class="fas fa-arrow-left"></i></a>
-    <h1>Mi Perfil</h1>
-  </div>
+<div class="profile-container main-green-bg">
+  <app-header></app-header>
 
-  <div class="profile-card">
-    <div class="profile-icon-container">
-      <i class="fas fa-user-circle"></i>
+  <div class="profile-content">
+    
+    <div class="avatar-section">
+      <div class="avatar-wrapper" (click)="triggerFileInput()">
+        <img *ngIf="profileImageSrc" [src]="profileImageSrc" alt="Foto de Perfil" class="profile-img">
+        <div *ngIf="!profileImageSrc" class="placeholder-img">
+          <i class="fas fa-user"></i>
+        </div>
+        <div class="edit-overlay">
+          <i class="fas fa-camera"></i>
+        </div>
+      </div>
+      
+      <div class="name-edit-wrapper">
+        <input type="text" [(ngModel)]="userName" class="name-input" placeholder="Tu Nombre">
+        <i class="fas fa-pen edit-icon"></i>
+      </div>
+
+      <p class="hint">Toca la foto para cambiarla</p>
+      <input type="file" id="profile-upload" accept="image/*" (change)="onFileSelected($event)" style="display: none;">
     </div>
-    <div class="profile-info">
-      <h2>{{ userName }}</h2>
-      <p>{{ userEmail }}</p>
+
+    <div class="settings-form">
+      <h3>Configuración Financiera</h3>
+      
+      <div class="input-group">
+        <label for="budget">Presupuesto Mensual ($)</label>
+        <div class="input-wrapper">
+          <i class="fas fa-wallet"></i>
+          <input type="number" id="budget" [(ngModel)]="budget" placeholder="0.00">
+        </div>
+        <small>Esto ajustará tu barra de progreso en el inicio.</small>
+      </div>
+
+      <div class="input-group">
+        <label for="goal">Meta de Ahorro ($)</label>
+        <div class="input-wrapper">
+          <i class="fas fa-bullseye"></i>
+          <input type="number" id="goal" [(ngModel)]="savingsGoal" placeholder="0.00">
+        </div>
+      </div>
+
+      <button class="save-btn" (click)="saveSettings()">
+        <i class="fas fa-save"></i> Guardar Cambios
+      </button>
     </div>
+
   </div>
 </div>
