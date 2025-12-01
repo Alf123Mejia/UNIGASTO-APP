@@ -4,25 +4,29 @@
   <div class="content-wrapper">
     <h2>Análisis de Gastos</h2>
     
-    <div class="chart-card" *ngIf="pieChartData().labels?.length; else noData">
-      <div class="chart-wrapper">
-        <canvas baseChart
-          [data]="pieChartData()"
-          [type]="pieChartType"
-          [options]="pieChartOptions"
-          [plugins]="pieChartPlugins">
-        </canvas>
-      </div>
-      <div class="chart-center-text">
-        <small>Total Gastado</small>
-        <span>{{ financialService.totalExpenses() | currency }}</span>
-      </div>
-    </div>
+    <ng-container *ngIf="pieChartData() as data">
+        <div class="chart-card" *ngIf="data.labels && data.labels.length > 0; else noData">
+          <div class="chart-wrapper">
+            <canvas baseChart
+              [data]="data"
+              [type]="pieChartType"
+              [options]="pieChartOptions"
+              [plugins]="pieChartPlugins">
+            </canvas>
+          </div>
+          
+          <div class="chart-center-text">
+            <small>Total Gastado</small>
+            <span>{{ financialService.totalExpenses() | currency }}</span>
+          </div>
+        </div>
+    </ng-container>
 
     <ng-template #noData>
-      <div class="empty-state">
-        <i class="fas fa-chart-pie"></i>
-        <p>Aún no hay gastos para analizar.</p>
+      <div class="chart-card"> <div class="empty-state">
+            <i class="fas fa-chart-pie"></i>
+            <p>Aún no hay gastos para analizar.</p>
+          </div>
       </div>
     </ng-template>
 

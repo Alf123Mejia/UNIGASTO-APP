@@ -1,10 +1,34 @@
 // src/app/services/financial.ts
+
 import { Injectable, signal, computed, effect } from '@angular/core';
 
-export interface Category { name: string; icon: string; color: string; }
-export interface Transaction { id: number; description: string; note?: string; date: string; amount: number; category: string; icon: string; iconColor: string; }
-export interface Notification { id: number; title: string; message: string; icon: string; type: 'info' | 'warning' | 'transaction' | 'budget' | 'goal'; date: string; isRead: boolean; }
+// --- INTERFACES ---
+export interface Category {
+  name: string;
+  icon: string;
+  color: string;
+}
+export interface Transaction {
+  id: number;
+  description: string;
+  note?: string;
+  date: string; // ISO String format
+  amount: number;
+  category: string;
+  icon: string;
+  iconColor: string;
+}
+export interface Notification {
+  id: number;
+  title: string;
+  message: string;
+  icon: string;
+  type: 'info' | 'warning' | 'transaction' | 'budget' | 'goal';
+  date: string; // ISO String format
+  isRead: boolean;
+}
 
+// --- DATOS INICIALES ---
 const initialCategories: Category[] = [
     { name: 'Supermercado', icon: 'fas fa-shopping-cart', color: '#2ecc71' },
     { name: 'Restaurantes', icon: 'fas fa-utensils', color: '#e74c3c' },
@@ -28,7 +52,27 @@ const initialCategories: Category[] = [
 ];
 
 const initialTransactions: Transaction[] = [];
-const INITIAL_KEYWORDS: { [key: string]: string[] } = { /* ... (Mismo diccionario que ya tienes) ... */ }; // Puedes dejar tu diccionario lleno
+const INITIAL_KEYWORDS: { [key: string]: string[] } = {
+  'Supermercado': ['súper selectos', 'walmart', 'despensa', 'pricesmart', 'keny', 'baratillo', 'mercado'],
+  'Restaurantes': ['pampa', 'tony', 'olive', 'rustico', 'pueblo', 'zocalo', 'siciliana', 'crepe', 'sushi', 'lomo'],
+  'Comida Rápida': ['mcdonald', 'burger', 'wendy', 'pizza', 'papa', 'caesar', 'subway', 'quiznos', 'campero', 'pollo', 'donut', 'china', 'donkeys', 'kfc', 'taco'],
+  'Cafés y Postres': ['starbucks', 'juan valdez', 'ben', 'coffee', 'espresso', 'ban ban', 'neveria', 'boston', 'llao', 'sarita'],
+  'Antojos y Calle': ['pupusas', 'elotes', 'yuca', 'panes', 'empanadas', 'pastelitos', 'churros', 'minutas', 'sorbete', 'típicos'],
+  'Transporte': ['gasolina', 'texaco', 'uno', 'puma', 'acsa', 'epic', 'uber', 'indrive', 'taxi', 'bus'],
+  'Delivery': ['pedidosya', 'hugo', 'uber', 'delivery', 'mandadito'],
+  'Ropa y Calzado': ['siman', 'zara', 'bershka', 'pull', 'stradivarius', 'forever', 'md', 'eagle', 'payless', 'adoc', 'nike', 'adidas'],
+  'Accesorios y Belleza': ['kiko', 'maquillaje', 'perfume', 'cremas', 'salon', 'barberia', 'reloj', 'lentes', 'claire'],
+  'Compras Varias': ['dollar', 'miniso', 'ylufa', 'chinos', 'amazon', 'temu', 'shein', 'ebay'],
+  'Suscripciones': ['netflix', 'spotify', 'hbo', 'disney', 'prime', 'apple', 'youtube', 'crunchyroll', 'icloud', 'google', 'adobe', 'canva'],
+  'Servicios del Hogar': ['luz', 'aes', 'caess', 'agua', 'anda', 'tigo', 'claro', 'internet', 'alquiler', 'renta'],
+  'Ocio y Salidas': ['cine', 'cinepolis', 'cinemark', 'bar', 'discoteca', 'tunco', 'paseo', 'volcan', 'lago', 'concierto', 'fiesta', 'entrada'],
+  'Hobbies y Pasatiempos': ['steam', 'playstation', 'nintendo', 'xbox', 'fortnite', 'videojuego', 'valakut', 'carisma', 'libros', 'libreria'],
+  'Salud y Bienestar': ['farmacia', 'nicolas', 'value', 'medicinas', 'smartfit', 'gimnasio', 'gym', 'medico', 'dentista'],
+  'Educación': ['universidad', 'ufg', 'uca', 'ues', 'matias', 'evangelica', 'matricula', 'colegiatura', 'cuota', 'libros', 'fotocopias'],
+  'Otros Gastos': ['mascota', 'veterinario', 'regalo', 'donacion', 'ferreteria', 'vidri', 'freund', 'cajero'],
+  'Ahorro': ['ahorro', 'guardar', 'meta', 'alcancia'],
+  'Ingresos': ['salario', 'pago', 'nomina', 'mesada', 'remesa', 'beca', 'freelance', 'venta', 'aguinaldo']
+};
 const STOP_WORDS = ['un', 'una', 'de', 'la', 'el', 'los', 'las', 'con', 'mi', 'para', 'en', 'y', 'o', 'a'];
 
 function loadFromLocalStorage<T>(key: string, defaultValue: T): T {
@@ -39,30 +83,36 @@ function loadFromLocalStorage<T>(key: string, defaultValue: T): T {
 
 @Injectable({ providedIn: 'root' })
 export class FinancialService {
+
   private readonly KEYS = {
     transactions: 'unigasto_transactions', categories: 'unigasto_categories', budget: 'unigasto_budget',
     savingsGoal: 'unigasto_savingsGoal', totalSaved: 'unigasto_totalSaved', notifications: 'unigasto_notifications',
     keywords: 'unigasto_keywords', profileImage: 'unigasto_profileImage', userName: 'unigasto_userName'
   };
 
+  // --- SEÑALES ---
   private transactionsSignal = signal<Transaction[]>(loadFromLocalStorage(this.KEYS.transactions, initialTransactions));
   private categoriesSignal = signal<Category[]>(loadFromLocalStorage(this.KEYS.categories, initialCategories));
-  private budgetSignal = signal<number>(loadFromLocalStorage(this.KEYS.budget, 100.00));
+  private budgetSignal = signal<number>(loadFromLocalStorage(this.KEYS.budget, 1200.00));
   private totalSavedSignal = signal<number>(loadFromLocalStorage(this.KEYS.totalSaved, 0));
-  private savingsGoalSignal = signal<number>(loadFromLocalStorage(this.KEYS.savingsGoal, 100.00));
+  private savingsGoalSignal = signal<number>(loadFromLocalStorage(this.KEYS.savingsGoal, 500.00));
   private notificationsSignal = signal<Notification[]>(loadFromLocalStorage(this.KEYS.notifications, []));
   private keywordsSignal = signal<{ [key: string]: string[] }>(loadFromLocalStorage(this.KEYS.keywords, INITIAL_KEYWORDS));
   private profileImageSignal = signal<string>(loadFromLocalStorage(this.KEYS.profileImage, ''));
   private userNameSignal = signal<string>(loadFromLocalStorage(this.KEYS.userName, 'Usuario'));
 
+  // --- COMPUTADAS ---
   private totalExpensesSignal = computed(() => {
-    return this.transactionsSignal().filter(t => t.amount < 0 && t.category !== 'Ahorro').reduce((acc, t) => acc + Math.abs(t.amount), 0);
+    return this.transactionsSignal()
+      .filter(t => t.amount < 0 && t.category !== 'Ahorro')
+      .reduce((acc, t) => acc + Math.abs(t.amount), 0);
   });
 
   private balanceSignal = computed(() => {
     return this.transactionsSignal().reduce((acc, t) => acc + t.amount, 0);
   });
 
+  // --- PÚBLICAS ---
   public balance = this.balanceSignal;
   public totalExpenses = this.totalExpensesSignal;
   public budget = this.budgetSignal.asReadonly();
@@ -88,110 +138,145 @@ export class FinancialService {
     });
   }
 
+  // --- MÉTODOS DE PERFIL ---
   setBudget(amount: number) { this.budgetSignal.set(amount); this.checkAndGenerateAlerts(); }
   setSavingsGoal(amount: number) { this.savingsGoalSignal.set(amount); }
   setProfileImage(imageBase64: string) { this.profileImageSignal.set(imageBase64); }
   setUserName(name: string) { this.userNameSignal.set(name); }
 
+  // --- MÉTODOS PRINCIPALES ---
+
   private learnKeywords(description: string, category: string): void {
     if (!description) return;
     const keywords = this.keywordsSignal();
-    const words = (description.toLowerCase().match(/\b[a-z\u00E0-\u00FC]+\b/g) || []).filter(word => word.length > 2 && !STOP_WORDS.includes(word));
+    const words = (description.toLowerCase().match(/\b[a-z\u00E0-\u00FC]+\b/g) || [])
+      .filter(word => word.length > 2 && !STOP_WORDS.includes(word));
     let updated = false;
     if (!keywords[category]) { keywords[category] = []; }
     for (const word of words) {
-      if (!keywords[category].includes(word)) { keywords[category].push(word); updated = true; }
+      if (!keywords[category].includes(word)) {
+        keywords[category].push(word);
+        updated = true;
+      }
     }
     if (updated) { this.keywordsSignal.set({ ...keywords }); }
   }
 
   getSuggestedCategory(description: string): { category: string, isExpense: boolean } | null {
     if (!description) return null;
-    const lower = description.toLowerCase();
+    const lowerCaseDescription = description.toLowerCase();
     const keywords = this.keywordsSignal();
-    for (const cat in keywords) {
-      for (const word of keywords[cat]) {
-        if (lower.includes(word)) { return { category: cat, isExpense: cat !== 'Ingresos' }; }
+    for (const category in keywords) {
+      for (const keyword of keywords[category]) {
+        if (lowerCaseDescription.includes(keyword)) {
+          const isExpense = category !== 'Ingresos';
+          return { category, isExpense };
+        }
       }
     }
     return null;
   }
 
-  addTransaction(data: any): void {
-    const isSaving = data.category === 'Ahorro';
-    let amount = isSaving ? -Math.abs(data.amount) : (data.category === 'Ingresos' ? Math.abs(data.amount) : -Math.abs(data.amount));
+  addTransaction(newTransactionData: any): void {
+    const isSaving = newTransactionData.category === 'Ahorro';
+    let finalAmount = 0;
+
+    if (isSaving) { finalAmount = -Math.abs(newTransactionData.amount); }
+    else if (newTransactionData.category === 'Ingresos') { finalAmount = Math.abs(newTransactionData.amount); }
+    else { finalAmount = -Math.abs(newTransactionData.amount); }
+
+    // --- CORRECCIÓN: Verificar si la categoría existe, si no, crearla ---
+    let categoryInfo = this.categoriesSignal().find(cat => cat.name === newTransactionData.category);
     
-    const catInfo = this.categoriesSignal().find(c => c.name === data.category);
-    const newTrans: Transaction = {
-      id: Date.now(), description: data.description, note: data.note, date: data.date || new Date().toISOString(),
-      amount: amount, category: data.category, icon: catInfo?.icon || 'fas fa-question', iconColor: catInfo?.color || '#333'
+    if (!categoryInfo && newTransactionData.category) {
+        // Crear nueva categoría con valores por defecto
+        const newCategory: Category = {
+            name: newTransactionData.category,
+            icon: 'fas fa-tag', // Icono genérico
+            color: '#95a5a6'    // Color gris/neutro
+        };
+        this.addCategory(newCategory);
+        categoryInfo = newCategory;
+        
+        // Inicializar aprendizaje para la nueva categoría
+        this.keywordsSignal.update(k => ({...k, [newCategory.name]: []}));
+    }
+    // ------------------------------------------------------------------
+
+    const fullTransaction: Transaction = {
+      description: newTransactionData.description,
+      note: newTransactionData.note,
+      date: newTransactionData.date || new Date().toISOString(),
+      amount: finalAmount,
+      category: newTransactionData.category,
+      id: Date.now(),
+      icon: categoryInfo?.icon || 'fas fa-question-circle',
+      iconColor: categoryInfo?.color || '#333'
     };
 
-    this.transactionsSignal.update(curr => [newTrans, ...curr]);
-    if (!isSaving) this.learnKeywords(data.description, data.category);
-    if (isSaving) this.totalSavedSignal.update(s => s + Math.abs(data.amount));
+    this.transactionsSignal.update(current => [fullTransaction, ...current]);
     
-    // SIEMPRE verificar alertas después de añadir, si no es ahorro
-    if (amount < 0 && !isSaving) { 
-        this.checkAndGenerateAlerts();
-        this.checkFrequencyAlerts(data.category);
+    if (!isSaving) { this.learnKeywords(newTransactionData.description, newTransactionData.category); }
+
+    if (isSaving) {
+      const amountToSave = Math.abs(newTransactionData.amount);
+      this.totalSavedSignal.update(currentSavings => currentSavings + amountToSave);
+    }
+
+    if (finalAmount < 0 && !isSaving) { 
+        this.checkAndGenerateAlerts(); 
+        this.checkFrequencyAlerts(newTransactionData.category); 
     }
   }
 
-  updateTransaction(updated: Transaction): void {
-      const current = this.transactionsSignal();
-      const original = current.find(t => t.id === updated.id);
-      if (!original) return;
+  updateTransaction(updatedTransaction: Transaction): void {
+      const currentTransactions = this.transactionsSignal();
+      const originalTransaction = currentTransactions.find(t => t.id === updatedTransaction.id);
+      if (!originalTransaction) return;
       
-      if (updated.category === 'Ahorro' || updated.category !== 'Ingresos') updated.amount = -Math.abs(updated.amount);
-      else updated.amount = Math.abs(updated.amount);
+      if (updatedTransaction.category === 'Ahorro' || updatedTransaction.category !== 'Ingresos') { updatedTransaction.amount = -Math.abs(updatedTransaction.amount); }
+      else { updatedTransaction.amount = Math.abs(updatedTransaction.amount); }
 
-      this.transactionsSignal.update(curr => curr.map(t => t.id === updated.id ? updated : t));
+      this.transactionsSignal.update(current => current.map(t => t.id === updatedTransaction.id ? updatedTransaction : t));
 
-      if (original.category === 'Ahorro' || updated.category === 'Ahorro') {
+      if (originalTransaction.category === 'Ahorro' || updatedTransaction.category === 'Ahorro') {
           let diff = 0;
-          if (original.category === 'Ahorro') diff -= Math.abs(original.amount);
-          if (updated.category === 'Ahorro') diff += Math.abs(updated.amount);
+          if (originalTransaction.category === 'Ahorro') diff -= Math.abs(originalTransaction.amount);
+          if (updatedTransaction.category === 'Ahorro') diff += Math.abs(updatedTransaction.amount);
           if (diff !== 0) this.totalSavedSignal.update(s => s + diff);
       }
-      // Verificar alertas al actualizar también
-      if (updated.amount < 0 && updated.category !== 'Ahorro') this.checkAndGenerateAlerts();
+      if (updatedTransaction.amount < 0 && updatedTransaction.category !== 'Ahorro') { this.checkAndGenerateAlerts(); }
   }
 
-  deleteTransaction(id: number): void {
-      const current = this.transactionsSignal();
-      const toDelete = current.find(t => t.id === id);
-      if (!toDelete) return;
-      this.transactionsSignal.update(curr => curr.filter(t => t.id !== id));
-      if (toDelete.category === 'Ahorro') this.totalSavedSignal.update(s => s - Math.abs(toDelete.amount));
+  deleteTransaction(transactionId: number): void {
+      const currentTransactions = this.transactionsSignal();
+      const transactionToDelete = currentTransactions.find(t => t.id === transactionId);
+      if (!transactionToDelete) return;
+      this.transactionsSignal.update(current => current.filter(t => t.id !== transactionId));
+      if (transactionToDelete.category === 'Ahorro') {
+          const amount = Math.abs(transactionToDelete.amount);
+          this.totalSavedSignal.update(s => s - amount);
+      }
   }
 
-  addCategory(cat: Category): void { this.categoriesSignal.update(c => [...c, cat]); }
+  addCategory(newCategory: Category): void {
+    this.categoriesSignal.update(currentCategories => [...currentCategories, newCategory]);
+  }
 
   addNotification(notification: Omit<Notification, 'isRead' | 'id'>): void {
-    const today = new Date().toDateString();
-    const exists = this.notificationsSignal().some(n => 
-        n.title === notification.title && n.message === notification.message && new Date(n.date).toDateString() === today
-    );
-    if (!exists) {
-        this.notificationsSignal.update(curr => [{ ...notification, id: Date.now(), isRead: false }, ...curr]);
-    }
+    // Eliminada la restricción de fecha para asegurar que las alertas aparezcan en pruebas
+    this.notificationsSignal.update(currentNotifications => [{ ...notification, id: Date.now(), isRead: false }, ...currentNotifications]);
   }
 
   markAsRead(id: number): void { this.notificationsSignal.update(n => n.map(notif => notif.id === id ? { ...notif, isRead: true } : notif)); }
   markAllAsRead(): void { this.notificationsSignal.update(n => n.map(notif => ({ ...notif, isRead: true }))); }
-  getUnreadNotificationsCount(): number { return this.notificationsSignal().filter(n => !n.isRead).length; }
+  getUnreadNotificationsCount(): number { return this.notificationsSignal().filter(notif => !notif.isRead).length; }
 
-  // --- CORRECCIÓN: Alertas robustas ---
   private checkAndGenerateAlerts(): void {
-    const budget = this.budgetSignal();
-    if (budget <= 0) return; // No alertar si no hay presupuesto
-
     const usage = this.budgetUsage;
-    // Quitamos la restricción de "lastTransaction" para que funcione al cambiar el presupuesto
-    if (usage >= 100) { 
+    if (this.budgetSignal() > 0 && usage >= 100) { 
         this.addNotification({title: 'Presupuesto Excedido', message: `Te has pasado del 100% de tu presupuesto.`, icon: 'fas fa-exclamation-circle', type: 'budget', date: new Date().toISOString()}); 
-    } else if (usage >= 90) { 
+    } else if (this.budgetSignal() > 0 && usage >= 90) { 
         this.addNotification({title: 'Alerta de Presupuesto', message: `Has usado el ${usage.toFixed(0)}% de tu presupuesto mensual.`, icon: 'fas fa-exclamation-triangle', type: 'budget', date: new Date().toISOString()}); 
     }
   }
@@ -199,11 +284,26 @@ export class FinancialService {
   private checkFrequencyAlerts(categoryName: string): void {
       const riskCategories = ['Comida Rápida', 'Antojos y Calle', 'Cafés y Postres', 'Ocio y Salidas'];
       if (!riskCategories.includes(categoryName)) return;
+
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-      const count = this.transactionsSignal().filter(t => t.category === categoryName && new Date(t.date) >= oneWeekAgo && t.amount < 0).length;
+
+      const recentTransactions = this.transactionsSignal().filter(t => 
+          t.category === categoryName && 
+          new Date(t.date) >= oneWeekAgo &&
+          t.amount < 0 
+      );
+
+      const count = recentTransactions.length;
+      
       if (count >= 3) { 
-          this.addNotification({title: `Cuidado con ${categoryName}`, message: `Has gastado ${count} veces en ${categoryName} esta semana.`, icon: 'fas fa-chart-line', type: 'warning', date: new Date().toISOString()}); 
+          this.addNotification({
+              title: `Cuidado con ${categoryName}`,
+              message: `Has gastado ${count} veces en ${categoryName} esta semana. Considera reducir estos gastos.`,
+              icon: 'fas fa-chart-line',
+              type: 'warning',
+              date: new Date().toISOString()
+          });
       }
   }
 
